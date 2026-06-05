@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { loadState, saveState } from '../services/storage';
 import { getToday, calculateStreak, calculateLongestStreak, getSaintLevel, checkLiberation, generateId } from '../utils/helpers';
 import { DIFFICULTY_XP, BUILT_IN_PUNISHMENTS, ACHIEVEMENTS, MASTERY_QUESTS } from '../data/constants';
-import { scheduleHabitNotification, sendBrowserNotification } from '../services/notifications.js';
+import { scheduleHabitNotification, sendBrowserNotification } from '../services/notification';
 
 export const useApp = () => {
   const [state, setState] = useState(loadState);
