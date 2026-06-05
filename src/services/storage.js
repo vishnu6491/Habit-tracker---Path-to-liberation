@@ -64,7 +64,7 @@ const getDefaultState = () => ({
       { id: 'health', progress: 0 },
       { id: 'mind', progress: 0 },
       { id: 'learning', progress: 0 },
-      { id: 'spiritual', progress: and: 0 }
+      { id: 'spiritual', progress: 0 }
     ],
     trialCompleted: false,
     isLiberated: false,
