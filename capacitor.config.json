@@ -1,0 +1,11 @@
+{
+  "appId": "com.habitquest.liberation",
+  "appName": "Habit Quest",
+  "webDir": "dist",
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon_config_sample",
+      "iconColor": "#FFD700"
+    }
+  }
+}
