@@ -1,0 +1,202 @@
+:root {
+  --bg-dark: #121212;
+  --bg-card: #1e1e1e;
+  --gold: #FFD700;
+  --gold-dim: #B8860B;
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --success: #4caf50;
+  --danger: #f44336;
+  --warning: #ff9800;
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 600px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  padding-bottom: 80px;
+}
+
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #333;
+}
+
+.gold-text { color: var(--gold); }
+.btn {
+  background: var(--gold);
+  color: #000;
+  border: none;  padding: 12px 20px;
+  border-radius: var(--radius);
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 8px;
+}
+.btn:disabled { background: #555; color: #888; }
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+}
+.btn-danger { background: var(--danger); color: white; }
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 600px;
+  background: var(--bg-card);
+  display: flex;
+  justify-content: space-around;
+  padding: 12px 0;
+  border-top: 1px solid #333;
+  z-index: 100;
+}
+
+.nav-item {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.nav-item.active { color: var(--gold); }
+.nav-icon { font-size: 20px; margin-bottom: 4px; }
+
+.input, .select, .textarea {
+  width: 100%;
+  padding: 12px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: white;
+  border-radius: var(--radius);  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.habit-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #2a2a2a;
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  border-left: 4px solid var(--gold);
+}
+
+.habit-item.missed { border-left-color: var(--danger); }
+.habit-item.completed { border-left-color: var(--success); opacity: 0.7; }
+
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+}
+
+.modal {
+  background: var(--bg-card);
+  padding: 24px;
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 400px;
+  border: 1px solid var(--gold-dim);
+}
+
+.avatar-container {
+  text-align: center;
+  padding: 20px;
+}
+
+.avatar-svg {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto;
+  filter: drop-shadow(0 0 10px var(--gold));
+}
+.progress-bar {
+  height: 8px;
+  background: #333;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--gold);
+  transition: width 0.3s ease;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2a2a2a;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.calendar-day.perfect { background: var(--success); color: white; }
+.calendar-day.good { background: var(--gold-dim); color: white; }
+.calendar-day.missed { background: var(--danger); color: white; }
+.calendar-day.today { border: 2px solid var(--gold); }
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  background: #333;
+  border-radius: 12px;
+  font-size: 12px;
+  margin: 4px;
+  border: 1px solid var(--gold-dim);
+}
+
+.badge.earned { background: var(--gold); color: black; border-color: var(--gold); }
+
+@keyframes pulse {  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.pulse { animation: pulse 2s infinite; }
