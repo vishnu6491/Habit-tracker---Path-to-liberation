@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  base: '/Habit-tracker---Path-to-liberation/',
   plugins: [
     react(),
     VitePWA({
