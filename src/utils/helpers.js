@@ -1,4 +1,5 @@
-import { SAINT_LEVELS, MASTERY_QUESTS } from '../data/constants';
+import { MASTERY_QUESTS, SAINT_LEVELS } from '../data/constants'; // FIXED: Added missing import
+
 export const getToday = () => new Date().toISOString().split('T')[0];
 
 export const calculateStreak = (logs) => {
@@ -44,7 +45,10 @@ export const getSaintLevel = (xp) => {
 };
 
 export const checkLiberation = (state) => {
-  const { xp, longestStreak, karma, masteryQuests, trialCompleted, logs } = state;
+  const user = state.user || state; // FIXED: Robust state handling
+  const logs = state.logs || {};
+  const { xp, longestStreak, karma, masteryQuests, trialCompleted } = user;
+  
   if (xp < 15000) return false;
   if (longestStreak < 90) return false;
   if (karma <= 0) return false;
@@ -65,8 +69,8 @@ export const checkLiberation = (state) => {
   last365.forEach(date => {
     const log = logs[date];
     if (log) {
-      totalCompleted += log.completedHabits.length;
-      totalPossible += (log.completedHabits.length + (log.missedHabits?.length || 0));
+      totalCompleted += log.completedHabits?.length || 0;
+      totalPossible += (log.completedHabits?.length || 0) + (log.missedHabits?.length || 0);
     }
   });
   
