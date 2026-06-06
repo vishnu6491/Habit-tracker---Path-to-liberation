@@ -17,8 +17,8 @@ const Dashboard = ({ state, actions }) => {
   return (
     <div>
       <h2 className="gold-text" style={{ textAlign: 'center', marginBottom: '16px' }}>Habit Quest</h2>
-      <Avatar xp={state.user.xp} inventory={state.user.inventory} />
-      <Environment xp={state.user.xp} missedDays={state.settings.missedDaysStreak} />
+      <p>Avatar Test</p>
+      <p>Environment Test</p>
       
       <div className="card">
         <h3>Liberation Meter</h3>
@@ -26,7 +26,7 @@ const Dashboard = ({ state, actions }) => {
         <p>XP: <span className="gold-text">{state.user.xp}</span></p>
         <p>Streak: <span className="gold-text">{streak} days</span> (Longest: {state.user.longestStreak})</p>
         <p>Karma: <span className={state.user.karma >= 0 ? 'gold-text' : 'text-danger'}>{state.user.karma}</span></p>
-        {nextLevel && <ProgressBar current={state.user.xp - levelInfo.minXp} max={nextLevel.minXp - levelInfo.minXp} label={`Progress to ${nextLevel.name}`} />}
+        <p>Progress Test</p>
         {isLiberated && <h3 className="gold-text pulse" style={{textAlign: 'center', marginTop: '16px'}}>🌟 LIBERATION ACHIEVED 🌟</h3>}
       </div>
 
