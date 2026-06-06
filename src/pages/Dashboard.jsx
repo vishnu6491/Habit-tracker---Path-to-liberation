@@ -1,28 +1,24 @@
 import React from 'react';
 import { getToday, getSaintLevel, calculateStreak, checkLiberation } from '../utils/helpers';
-import { SAINT_LEVELS } from '../data/constants';
+import { SAINT_LEVELS } from '../data/constants'; // FIXED: Added missing import
 import Avatar from '../components/Avatar';
 import Environment from '../components/Environment';
 import ProgressBar from '../components/ProgressBar';
 
 const Dashboard = ({ state, actions }) => {
   const today = getToday();
-  const todayLog = (state?.logs?.[today]) || {
-  completedHabits: [],
-  missedHabits: []
-};
-  const activeHabits = (state?.habits || []).filter(h => h.active);
-  const streak = calculateStreak(state.logs || []);
+  const todayLog = state.logs[today] || { completedHabits: [], missedHabits: [] };
+  const activeHabits = state.habits.filter(h => h.active);
+  const streak = calculateStreak(state.logs);
   const levelInfo = getSaintLevel(state.user.xp);
   const nextLevel = state.user.xp >= 15000 ? null : state.user.xp >= 10000 ? SAINT_LEVELS[6] : SAINT_LEVELS.find(l => l.minXp > state.user.xp) || SAINT_LEVELS[6];
   const isLiberated = checkLiberation(state);
-  console.log("STATE", state);
 
   return (
     <div>
       <h2 className="gold-text" style={{ textAlign: 'center', marginBottom: '16px' }}>Habit Quest</h2>
-      <p>Avatar Test</p>
-      <p>Environment Test</p>
+      <Avatar xp={state.user.xp} inventory={state.user.inventory} />
+      <Environment xp={state.user.xp} missedDays={state.settings.missedDaysStreak} />
       
       <div className="card">
         <h3>Liberation Meter</h3>
@@ -30,7 +26,7 @@ const Dashboard = ({ state, actions }) => {
         <p>XP: <span className="gold-text">{state.user.xp}</span></p>
         <p>Streak: <span className="gold-text">{streak} days</span> (Longest: {state.user.longestStreak})</p>
         <p>Karma: <span className={state.user.karma >= 0 ? 'gold-text' : 'text-danger'}>{state.user.karma}</span></p>
-        <p>Progress Test</p>
+        {nextLevel && <ProgressBar current={state.user.xp - levelInfo.minXp} max={nextLevel.minXp - levelInfo.minXp} label={`Progress to ${nextLevel.name}`} />}
         {isLiberated && <h3 className="gold-text pulse" style={{textAlign: 'center', marginTop: '16px'}}>🌟 LIBERATION ACHIEVED 🌟</h3>}
       </div>
 
@@ -39,7 +35,7 @@ const Dashboard = ({ state, actions }) => {
           <h3 style={{ color: '#f44336' }}>⚠️ Discipline Punishment</h3>
           <p>You have neglected your path. Complete this to restore balance:</p>
           <h4 className="gold-text" style={{ marginTop: '8px' }}>{state.settings.currentPunishment}</h4>
-          <button className="btn" onClick={() => actions.updateHabit('settings', { currentPunishment: null, missedDaysStreak: 0 })}>I Have Completed This Punishment</button>
+          <button className="btn" onClick={actions.clearPunishment}>I Have Completed This Punishment</button> {/* FIXED */}
         </div>
       )}
 
