@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Habit Quest</string>
+    <string name="title_activity_main">Habit Quest: Path to Liberation</string>
+    <string name="package_name">com.habitquest.liberation</string>
+    <string name="custom_url_scheme">com.habitquest.liberation</string>
+</resources>
