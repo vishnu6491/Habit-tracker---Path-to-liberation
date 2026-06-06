@@ -1,3 +1,4 @@
+import { SAINT_LEVELS, MASTERY_QUESTS } from '../data/constants';
 export const getToday = () => new Date().toISOString().split('T')[0];
 
 export const calculateStreak = (logs) => {
