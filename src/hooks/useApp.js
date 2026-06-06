@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { loadState, saveState, exportData, importData, resetData } from '../services/storage'; // FIXED: Proper ESM imports
+import { loadState, saveState, exportData, importData, resetData } from '../services/storage';
 import { getToday, calculateStreak, calculateLongestStreak, getSaintLevel, checkLiberation, generateId } from '../utils/helpers';
 import { DIFFICULTY_XP, BUILT_IN_PUNISHMENTS, ACHIEVEMENTS, MASTERY_QUESTS } from '../data/constants';
 import { scheduleHabitNotification, sendBrowserNotification } from '../services/notifications';
@@ -128,6 +128,63 @@ export const useApp = () => {
     });
   };
 
+  // --- NEW UNDO LOGIC ---
+  const undoHabit = (habitId) => {
+    const today = getToday();
+    const habit = state.habits.find(h => h.id === habitId);
+    if (!habit) return;
+
+    setState(prev => {
+      const todayLog = prev.logs[today];
+      if (!todayLog) return prev;
+
+      const wasCompleted = todayLog.completedHabits.includes(habitId);
+      const wasMissed = todayLog.missedHabits.includes(habitId);
+
+      if (!wasCompleted && !wasMissed) return prev;
+
+      const newCompleted = todayLog.completedHabits.filter(id => id !== habitId);
+      const newMissed = todayLog.missedHabits.filter(id => id !== habitId);
+            let xpToAdjust = 0;
+      let karmaToAdjust = 0;
+
+      if (wasCompleted) {
+        xpToAdjust = -(DIFFICULTY_XP[habit.difficulty] || 10);
+        karmaToAdjust = -1;
+      } else if (wasMissed) {
+        karmaToAdjust = 1; // Reverses the -1 karma penalty
+      }
+
+      const newUser = {
+        ...prev.user,
+        xp: Math.max(0, prev.user.xp + xpToAdjust),
+        karma: prev.user.karma + karmaToAdjust,
+        totalCompleted: wasCompleted ? Math.max(0, prev.user.totalCompleted - 1) : prev.user.totalCompleted
+      };
+
+      // Reverse mastery quest progress if it was completed
+      if (wasCompleted && habit.category) {
+        const catLower = habit.category.toLowerCase();
+        const qIndex = newUser.masteryQuests.findIndex(q => q.id === catLower);
+        if (qIndex !== -1 && newUser.masteryQuests[qIndex].progress > 0) {
+          newUser.masteryQuests[qIndex].progress -= 1;
+        }
+      }
+
+      const newLogs = {
+        ...prev.logs,
+        [today]: { 
+          ...todayLog, 
+          completedHabits: newCompleted, 
+          missedHabits: newMissed,
+          xpEarned: Math.max(0, (todayLog.xpEarned || 0) + xpToAdjust)
+        }
+      };
+
+      return { ...prev, logs: newLogs, user: newUser };
+    });
+  };
+
   const checkPerfectDay = (date, habitId, isCompleting) => {
     const log = state.logs[date];
     if (!log) return isCompleting && state.habits.filter(h => h.active).length === 1;
@@ -137,15 +194,15 @@ export const useApp = () => {
   };
 
   const addCustomPunishment = (text) => {
-    setState(prev => ({
-      ...prev,
+    setState(prev => ({      ...prev,
       settings: { ...prev.settings, customPunishments: [...prev.settings.customPunishments, text] }
     }));
   };
 
   const removeCustomPunishment = (text) => {
     setState(prev => ({
-      ...prev,      settings: { ...prev.settings, customPunishments: prev.settings.customPunishments.filter(p => p !== text) }
+      ...prev,
+      settings: { ...prev.settings, customPunishments: prev.settings.customPunishments.filter(p => p !== text) }
     }));
   };
 
@@ -186,19 +243,20 @@ export const useApp = () => {
     }));
   };
 
-  const clearPunishment = () => {
-    setState(prev => ({
+  const clearPunishment = () => {    setState(prev => ({
       ...prev,
       settings: { ...prev.settings, currentPunishment: null, missedDaysStreak: 0 }
     }));
   };
 
   const actions = {
-    addHabit, updateHabit, deleteHabit, toggleHabitArchive,    completeHabit, missHabit, addCustomPunishment, removeCustomPunishment,
+    addHabit, updateHabit, deleteHabit, toggleHabitArchive,
+    completeHabit, missHabit, undoHabit, // <--- ADDED UNDO ACTION
+    addCustomPunishment, removeCustomPunishment,
     buyItem, addJournalEntry, completeTrial, updateSettings, clearPunishment,
-    exportData: () => exportData(state), // FIXED: Removed invalid require()
-    importData: (file) => importData(file, (data) => setState(data)), // FIXED
-    resetData: () => resetData() // FIXED
+    exportData: () => exportData(state),
+    importData: (file) => importData(file, (data) => setState(data)),
+    resetData: () => resetData()
   };
 
   return { state, actions };
