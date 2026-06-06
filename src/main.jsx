@@ -1,13 +1,16 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import App from './App.jsx';
+import './styles.css';
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+  });
+}
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <div style={{
-    background: 'red',
-    color: 'yellow',
-    fontSize: '40px',
-    minHeight: '100vh'
-  }}>
-    APP STARTED
-  </div>
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
 );
