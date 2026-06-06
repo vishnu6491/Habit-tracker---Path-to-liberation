@@ -64,7 +64,7 @@ const getDefaultState = () => ({
       { id: 'health', progress: 0 },
       { id: 'mind', progress: 0 },
       { id: 'learning', progress: 0 },
-      { id: 'spiritual', progress: 0 }
+      { id: 'spiritual', progress: 0 } // FIXED: Removed syntax error "and:"
     ],
     trialCompleted: false,
     isLiberated: false,
