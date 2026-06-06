@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom'; // FIXED: HashRouter for PWA compatibility
 import { useApp } from './hooks/useApp';
 import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
