@@ -1,5 +1,6 @@
 import React from 'react';
 import { getToday, getSaintLevel, calculateStreak, checkLiberation } from '../utils/helpers';
+import { SAINT_LEVELS } from '../data/constants';
 import Avatar from '../components/Avatar';
 import Environment from '../components/Environment';
 import ProgressBar from '../components/ProgressBar';
