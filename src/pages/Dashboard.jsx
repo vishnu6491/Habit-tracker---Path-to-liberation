@@ -1,6 +1,6 @@
 import React from 'react';
 import { getToday, getSaintLevel, calculateStreak, checkLiberation } from '../utils/helpers';
-import { SAINT_LEVELS } from '../data/constants'; // FIXED: Added missing import
+import { SAINT_LEVELS } from '../data/constants';
 import Avatar from '../components/Avatar';
 import Environment from '../components/Environment';
 import ProgressBar from '../components/ProgressBar';
@@ -35,7 +35,7 @@ const Dashboard = ({ state, actions }) => {
           <h3 style={{ color: '#f44336' }}>⚠️ Discipline Punishment</h3>
           <p>You have neglected your path. Complete this to restore balance:</p>
           <h4 className="gold-text" style={{ marginTop: '8px' }}>{state.settings.currentPunishment}</h4>
-          <button className="btn" onClick={actions.clearPunishment}>I Have Completed This Punishment</button> {/* FIXED */}
+          <button className="btn" onClick={actions.clearPunishment}>I Have Completed This Punishment</button>
         </div>
       )}
 
@@ -51,10 +51,29 @@ const Dashboard = ({ state, actions }) => {
                 <div style={{ fontSize: '12px', color: '#888' }}>{habit.difficulty} • {habit.category}</div>
               </div>
               <div>
-                {!isDone && !isMissed && <button className="btn" style={{ width: 'auto', padding: '8px 16px' }} onClick={() => actions.completeHabit(habit.id)}>✓</button>}
-                {!isDone && !isMissed && <button className="btn btn-outline" style={{ width: 'auto', padding: '8px 16px', marginLeft: '8px' }} onClick={() => actions.missHabit(habit.id)}>✗</button>}
-                {isDone && <span style={{ color: '#4caf50' }}>Completed</span>}
-                {isMissed && <span style={{ color: '#f44336' }}>Missed</span>}
+                {/* Show action buttons if neither completed nor missed */}
+                {!isDone && !isMissed && (
+                  <>
+                    <button className="btn" style={{ width: 'auto', padding: '8px 16px' }} onClick={() => actions.completeHabit(habit.id)}>✓</button>
+                    <button className="btn btn-outline" style={{ width: 'auto', padding: '8px 16px', marginLeft: '8px' }} onClick={() => actions.missHabit(habit.id)}>✗</button>
+                  </>
+                )}
+                
+                {/* Show Completed status + Undo button */}
+                {isDone && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: '#4caf50' }}>✓ Completed</span>
+                    <button className="btn btn-outline" style={{ width: 'auto', padding: '6px 12px', fontSize: '12px' }} onClick={() => actions.undoHabit(habit.id)}>Undo</button>
+                  </div>
+                )}
+                
+                {/* Show Missed status + Undo button */}
+                {isMissed && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ color: '#f44336' }}>✗ Missed</span>
+                    <button className="btn btn-outline" style={{ width: 'auto', padding: '6px 12px', fontSize: '12px' }} onClick={() => actions.undoHabit(habit.id)}>Undo</button>
+                  </div>
+                )}
               </div>
             </div>
           );
