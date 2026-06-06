@@ -9,7 +9,6 @@ export const useApp = () => {
 
   useEffect(() => {
     saveState(state);
-    evaluateAchievements();
   }, [state]);
 
   const evaluateAchievements = () => {
