@@ -1,5 +1,13 @@
-console.log("MAIN LOADED");
+import React from 'react';
+import ReactDOM from 'react-dom/client';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <h1 style={{color:'white'}}>APP STARTED</h1>
+  <div style={{
+    background: 'red',
+    color: 'yellow',
+    fontSize: '40px',
+    minHeight: '100vh'
+  }}>
+    APP STARTED
+  </div>
 );
