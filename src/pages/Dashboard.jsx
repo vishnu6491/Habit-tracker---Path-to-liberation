@@ -10,7 +10,7 @@ const Dashboard = ({ state, actions }) => {
   const activeHabits = state.habits.filter(h => h.active);
   const streak = calculateStreak(state.logs);
   const levelInfo = getSaintLevel(state.user.xp);
-  const nextLevel = state.user.xp >= 15000 ? null : state.user.xp >= 10000 ? SAINT_LEVELS[6] : SAINT_LEVELS.find(l => l.minXp > state.user.xp) || SAINT_LEVELS[6];
+  const nextLevel = null;
   const isLiberated = checkLiberation(state);
 
   return (
