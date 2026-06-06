@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
-import { loadState, saveState } from '../services/storage';
+import { loadState, saveState, exportData, importData, resetData } from '../services/storage'; // FIXED: Proper ESM imports
 import { getToday, calculateStreak, calculateLongestStreak, getSaintLevel, checkLiberation, generateId } from '../utils/helpers';
 import { DIFFICULTY_XP, BUILT_IN_PUNISHMENTS, ACHIEVEMENTS, MASTERY_QUESTS } from '../data/constants';
-import { scheduleHabitNotification, sendBrowserNotification } from '../services/notification';
+import { scheduleHabitNotification, sendBrowserNotification } from '../services/notifications';
 
 export const useApp = () => {
   const [state, setState] = useState(loadState);
 
   useEffect(() => {
     saveState(state);
+    evaluateAchievements();
   }, [state]);
 
   const evaluateAchievements = () => {
@@ -71,7 +72,7 @@ export const useApp = () => {
         xp: prev.user.xp + xpGain + bonusXp,
         karma: prev.user.karma + 1,
         totalCompleted: prev.user.totalCompleted + 1,
-        settings: { ...prev.user.settings, missedDaysStreak: 0, currentPunishment: null }
+        settings: { ...prev.settings, missedDaysStreak: 0, currentPunishment: null }
       };
 
       const newLogs = {
@@ -83,7 +84,8 @@ export const useApp = () => {
       newUser.longestStreak = Math.max(newUser.longestStreak, streak);
 
       if (habit.category) {
-        const qIndex = newUser.masteryQuests.findIndex(q => q.id === habit.category.toLowerCase());
+        const catLower = habit.category.toLowerCase();
+        const qIndex = newUser.masteryQuests.findIndex(q => q.id === catLower);
         if (qIndex !== -1) {
           newUser.masteryQuests[qIndex].progress += 1;
         }
@@ -94,8 +96,8 @@ export const useApp = () => {
         newUser.templeRecords.milestones[levelInfo.name] = today;
       }
 
-      return { ...prev, logs: newLogs, user: newUser };
-    });
+      return { ...prev, logs: newLogs, user: newUser };    });
+
     sendBrowserNotification('Habit Completed!', `+${xpGain} XP earned for ${habit.name}`);
   };
 
@@ -143,8 +145,8 @@ export const useApp = () => {
 
   const removeCustomPunishment = (text) => {
     setState(prev => ({
-      ...prev,
-      settings: { ...prev.settings, customPunishments: prev.settings.customPunishments.filter(p => p !== text) }    }));
+      ...prev,      settings: { ...prev.settings, customPunishments: prev.settings.customPunishments.filter(p => p !== text) }
+    }));
   };
 
   const buyItem = (item) => {
@@ -177,13 +179,26 @@ export const useApp = () => {
     }));
   };
 
+  const updateSettings = (updates) => {
+    setState(prev => ({
+      ...prev,
+      settings: { ...prev.settings, ...updates }
+    }));
+  };
+
+  const clearPunishment = () => {
+    setState(prev => ({
+      ...prev,
+      settings: { ...prev.settings, currentPunishment: null, missedDaysStreak: 0 }
+    }));
+  };
+
   const actions = {
-    addHabit, updateHabit, deleteHabit, toggleHabitArchive,
-    completeHabit, missHabit, addCustomPunishment, removeCustomPunishment,
-    buyItem, addJournalEntry, completeTrial,
-    exportData: () => { const { exportData } = require('../services/storage'); exportData(state); },
-    importData: (file) => { const { importData } = require('../services/storage'); importData(file, (data) => setState(data)); },
-    resetData: () => { const { resetData } = require('../services/storage'); resetData(); }
+    addHabit, updateHabit, deleteHabit, toggleHabitArchive,    completeHabit, missHabit, addCustomPunishment, removeCustomPunishment,
+    buyItem, addJournalEntry, completeTrial, updateSettings, clearPunishment,
+    exportData: () => exportData(state), // FIXED: Removed invalid require()
+    importData: (file) => importData(file, (data) => setState(data)), // FIXED
+    resetData: () => resetData() // FIXED
   };
 
   return { state, actions };
