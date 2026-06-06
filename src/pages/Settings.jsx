@@ -48,7 +48,7 @@ const Settings = ({ state, actions }) => {
             </li>
           ))}
         </ul>
-        <select className="select" value={state.settings.punishmentMode} onChange={e => setState({...state, settings: {...state.settings, punishmentMode: e.target.value}})}>
+        <select className="select" value={state.settings.punishmentMode} onChange={e => actions.updateSettings({ punishmentMode: e.target.value })}> {/* FIXED: Replaced undefined setState */}
           <option value="built-in">Built-in Only</option>
           <option value="custom">Custom Only</option>
           <option value="both">Both</option>
@@ -58,7 +58,7 @@ const Settings = ({ state, actions }) => {
       <div className="card">
         <h3>Data Management</h3>
         <button className="btn" onClick={actions.exportData}>Export JSON Backup</button>
-        <label className="btn btn-outline" style={{ display: 'block', textAlign: 'center', marginTop: '8px' }}>
+        <label className="btn btn-outline" style={{ display: 'block', textAlign: 'center', marginTop: '8px', cursor: 'pointer' }}>
           Import JSON Backup
           <input type="file" accept=".json" style={{ display: 'none' }} onChange={handleFileImport} />
         </label>
