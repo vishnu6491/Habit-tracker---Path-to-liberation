@@ -10,3 +10,21 @@ export const getSaintLevel = (progress) => {
 };
 
 export const generateId = () => Math.random().toString(36).substr(2, 9);
+
+// NEW: Check if a habit was due on a specific date
+export const isHabitDueOnDate = (habit, date) => {
+  const dayOfWeek = date.getDay();
+  
+  switch (habit.frequency) {
+    case 'daily':
+      return true;
+    case 'weekly':
+      return habit.selectedDays && habit.selectedDays.includes(dayOfWeek);
+    case 'monthly':
+      return date.getDate() === 1;
+    case 'custom':
+      return habit.selectedDays && habit.selectedDays.includes(dayOfWeek);
+    default:
+      return true;
+  }
+};
