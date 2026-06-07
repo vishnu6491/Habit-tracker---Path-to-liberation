@@ -1,14 +1,34 @@
 export const SAINT_LEVELS = [
-  { level: 1, name: 'Wanderer', minXp: 0, env: 'Dusty Path' },
-  { level: 2, name: 'Disciplined Seeker', minXp: 500, env: 'Forest' },
-  { level: 3, name: 'Yogi', minXp: 1500, env: 'Hermitage' },
-  { level: 4, name: 'Sage', minXp: 3000, env: 'Ashram' },
-  { level: 5, name: 'Master', minXp: 6000, env: 'Temple' },
-  { level: 6, name: 'Enlightened One', minXp: 10000, env: 'Celestial Realm' },
-  { level: 7, name: 'Liberation', minXp: 15000, env: 'Liberation Realm' }
+  { level: 1, name: 'Wanderer', minProgress: 0, env: 'Dusty Path' },
+  { level: 2, name: 'Disciplined Seeker', minProgress: 15, env: 'Forest' },
+  { level: 3, name: 'Yogi', minProgress: 30, env: 'Hermitage' },
+  { level: 4, name: 'Sage', minProgress: 50, env: 'Ashram' },
+  { level: 5, name: 'Master', minProgress: 70, env: 'Temple' },
+  { level: 6, name: 'Enlightened One', minProgress: 85, env: 'Celestial Realm' },
+  { level: 7, name: 'Liberation', minProgress: 95, env: 'Liberation Realm' }
 ];
 
-export const DIFFICULTY_XP = { Easy: 10, Medium: 20, Hard: 40 };
+export const DIFFICULTY_TYPES = {
+  Important: { max: 10, default: 10 },
+  'Less Important': { max: 5, default: 5 }
+};
+
+export const FREQUENCY_TYPES = {
+  daily: { name: 'Daily', xpMultiplier: 1 },
+  weekly: { name: 'Weekly', xpMultiplier: 3 },
+  monthly: { name: 'Monthly', xpMultiplier: 10 },
+  custom: { name: 'Custom Days', xpMultiplier: 1 }
+};
+
+export const WEEK_DAYS = [
+  { value: 0, label: 'Sun' },
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' }
+];
 
 export const BUILT_IN_PUNISHMENTS = [
   '20 Push-ups', '50 Push-ups', '100 Squats', '5 Minute Plank',
@@ -30,20 +50,26 @@ export const SHOP_ITEMS = [
 
 export const ACHIEVEMENTS = [
   { id: 'first_habit', name: 'First Step', desc: 'Complete your first habit', condition: (s) => s.totalCompleted >= 1 },
-  { id: 'streak_7', name: '7 Day Streak', desc: 'Maintain a 7-day streak', condition: (s) => s.longestStreak >= 7 },
-  { id: 'streak_30', name: '30 Day Streak', desc: 'Maintain a 30-day streak', condition: (s) => s.longestStreak >= 30 },
-  { id: 'streak_90', name: '90 Day Streak', desc: 'Maintain a 90-day streak', condition: (s) => s.longestStreak >= 90 },
   { id: 'hundred', name: 'Century', desc: 'Complete 100 habits total', condition: (s) => s.totalCompleted >= 100 },
-  { id: 'perfect_week', name: 'Perfect Week', desc: '100% completion for 7 days', condition: (s) => s.perfectWeeks >= 1 },
-  { id: 'perfect_month', name: 'Perfect Month', desc: '100% completion for 30 days', condition: (s) => s.perfectMonths >= 1 },
   { id: 'master', name: 'Master Achieved', desc: 'Reach Level 5', condition: (s) => s.level >= 5 },
-  { id: 'enlightened', name: 'Enlightened', desc: 'Reach Level 6', condition: (s) => s.level >= 6 },
   { id: 'liberation', name: 'Liberation', desc: 'Achieve final liberation', condition: (s) => s.isLiberated }
 ];
 
-export const MASTERY_QUESTS = [
-  { id: 'health', name: 'Health Mastery', desc: 'Complete 100 health-related habits', target: 100, category: 'Health' },
-  { id: 'mind', name: 'Mind Mastery', desc: 'Complete 100 mind-related habits', target: 100, category: 'Mind' },
-  { id: 'learning', name: 'Learning Mastery', desc: 'Complete 100 learning-related habits', target: 100, category: 'Learning' },
-  { id: 'spiritual', name: 'Spiritual Mastery', desc: 'Complete 100 spiritual-related habits', target: 100, category: 'Spiritual' }
+export const CHAKRA_THEMES = [
+  { id: 'crown', name: 'Crown Chakra (Violet/Gold)', primary: '#8A2BE2', secondary: '#FFD700', bg: '#1a0b2e' },
+  { id: 'third-eye', name: 'Third Eye (Indigo/Silver)', primary: '#4B0082', secondary: '#C0C0C0', bg: '#0f0518' },
+  { id: 'throat', name: 'Throat Chakra (Blue/Turquoise)', primary: '#00BFFF', secondary: '#E0FFFF', bg: '#001a33' },
+  { id: 'heart', name: 'Heart Chakra (Green/Emerald)', primary: '#2E8B57', secondary: '#98FB98', bg: '#001a0f' }
 ];
+
+export const CHAKRAS = [
+  { id: 'root', name: 'Root', color: '#FF0000', threshold: 15, icon: '🔴' },
+  { id: 'sacral', name: 'Sacral', color: '#FF7F00', threshold: 30, icon: '🟠' },
+  { id: 'solar', name: 'Solar Plexus', color: '#FFD700', threshold: 45, icon: '🟡' },
+  { id: 'heart', name: 'Heart', color: '#00FF00', threshold: 60, icon: '🟢' },
+  { id: 'throat', name: 'Throat', color: '#0000FF', threshold: 75, icon: '🔵' },
+  { id: 'third-eye', name: 'Third Eye', color: '#4B0082', threshold: 90, icon: '🟣' },
+  { id: 'crown', name: 'Crown', color: '#9400D3', threshold: 100, icon: '⚪' }
+];
+
+export const REST_DAY_COST = 100;
