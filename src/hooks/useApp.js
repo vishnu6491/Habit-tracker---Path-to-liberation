@@ -96,22 +96,14 @@ export const useApp = () => {
     setState(prev => ({ ...prev, habits: prev.habits.map(h => h.id === id ? { ...h, active: !h.active } : h) }));
   };
 
-  // FIXED: Calculate progress based on maintaining consistency over time  const calculateDailyProgressChange = (completionPct, currentLevel) => {
-    // Base progression: Should take ~30 days to go from 0% to 15% (Wanderer to Seeker)
-    // That's 0.5% progress per day at 100% completion
-    const baseProgressRate = 0.5; // Max progress per day at 100% completion
-    
-    // Level multiplier - higher levels progress slower
-    const levelMultiplier = 1 - ((currentLevel - 1) * 0.05); // -5% per level
+  const calculateDailyProgressChange = (completionPct, currentLevel) => {    const baseProgressRate = 0.5;
+    const levelMultiplier = 1 - ((currentLevel - 1) * 0.05);
     
     if (completionPct >= 80) {
-      // Excellent performance: gain progress
       return baseProgressRate * (completionPct / 100) * levelMultiplier;
     } else if (completionPct >= 50) {
-      // Moderate performance: minimal gain
       return baseProgressRate * 0.2 * (completionPct / 100) * levelMultiplier;
     } else {
-      // Poor performance: lose progress
       return -Math.abs(baseProgressRate * ((50 - completionPct) / 50) * levelMultiplier);
     }
   };
@@ -145,6 +137,7 @@ export const useApp = () => {
         newConsecutiveMisses[habit.id] = 0;
       }
     });
+
     if (completionPct < threshold && !punishment) {
       const pool = prev.settings.punishmentMode === 'custom' 
         ? prev.settings.customPunishments 
@@ -153,8 +146,6 @@ export const useApp = () => {
           : BUILT_IN_PUNISHMENTS;
       punishment = pool[Math.floor(Math.random() * pool.length)] || '20 Push-ups';
     }
-
-    // FIXED: Use the new slow progression calculation
     const progressChange = calculateDailyProgressChange(completionPct, prev.user.level);
     let newProgress = Math.max(0, Math.min(100, prev.user.progress + progressChange));
 
@@ -194,7 +185,8 @@ export const useApp = () => {
       const todayLog = prev.logs[today] || { completed: [], missed: [] };
       if (todayLog.completed.includes(habitId)) return prev;
 
-      const newCompleted = [...todayLog.completed, habitId];      const newMissed = todayLog.missed.filter(id => id !== habitId);
+      const newCompleted = [...todayLog.completed, habitId];
+      const newMissed = todayLog.missed.filter(id => id !== habitId);
       const newTodayLog = { completed: newCompleted, missed: newMissed };
       
       const dueHabits = getDueHabits();
@@ -202,15 +194,14 @@ export const useApp = () => {
       const newHabits = prev.habits.map(h => {
         if (h.id === habitId) {
           const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayStr = yesterday.toISOString().split('T')[0];
+          yesterday.setDate(yesterday.getDate() - 1);          const yesterdayStr = yesterday.toISOString().split('T')[0];
           const wasDoneYesterday = prev.logs[yesterdayStr]?.completed.includes(habitId);
           return { ...h, lastCompletedDate: today, currentStreak: wasDoneYesterday ? h.currentStreak + 1 : 1 };
         }
         return h;
       });
 
-      const { newConsecutiveMisses, punishment, xpAdjustment, newProgress, newLevel, newInventory, finalXp, completionPct } = processEndOfDayLogic({ ...prev, habits: newHabits }, newTodayLog, dueHabits);
+      const { newConsecutiveMisses, punishment, xpAdjustment, newProgress, newLevel, newInventory, finalXp } = processEndOfDayLogic({ ...prev, habits: newHabits }, newTodayLog, dueHabits);
 
       const newUser = {
         ...prev.user,
@@ -221,8 +212,8 @@ export const useApp = () => {
         inventory: newInventory
       };
 
-      if (newLevel > prev.user.level && !prev.user.templeRecords.milestones[SAINT_LEVELS.find(l=>l.level===newLevel).name]) {
-        newUser.templeRecords.milestones[SAINT_LEVELS.find(l=>l.level===newLevel).name] = today;
+      if (newLevel > prev.user.level && !prev.user.templeRecords.milestones[SAINT_LEVELS.find(l => l.level === newLevel).name]) {
+        newUser.templeRecords.milestones[SAINT_LEVELS.find(l => l.level === newLevel).name] = today;
       }
 
       return {
@@ -243,7 +234,8 @@ export const useApp = () => {
       if (todayLog.missed.includes(habitId)) return prev;
 
       const newMissed = [...todayLog.missed, habitId];
-      const newCompleted = todayLog.completed.filter(id => id !== habitId);      const newTodayLog = { completed: newCompleted, missed: newMissed };
+      const newCompleted = todayLog.completed.filter(id => id !== habitId);
+      const newTodayLog = { completed: newCompleted, missed: newMissed };
       
       const dueHabits = getDueHabits();
 
@@ -251,8 +243,7 @@ export const useApp = () => {
 
       return {
         ...prev,
-        logs: { ...prev.logs, [today]: newTodayLog },
-        user: { ...prev.user, xp: finalXp, progress: newProgress, level: newLevel, inventory: newInventory },
+        logs: { ...prev.logs, [today]: newTodayLog },        user: { ...prev.user, xp: finalXp, progress: newProgress, level: newLevel, inventory: newInventory },
         settings: { ...prev.settings, consecutiveMisses: newConsecutiveMisses, currentPunishment: punishment }
       };
     });
@@ -292,7 +283,8 @@ export const useApp = () => {
   };
 
   const togglePause = (isPaused, reason) => {
-    setState(prev => ({      ...prev,
+    setState(prev => ({
+      ...prev,
       settings: {
         ...prev.settings,
         isPaused,
@@ -300,7 +292,6 @@ export const useApp = () => {
       }
     }));
   };
-
   const addCustomPunishment = (text) => {
     setState(prev => ({ ...prev, settings: { ...prev.settings, customPunishments: [...prev.settings.customPunishments, text] } }));
   };
@@ -328,11 +319,20 @@ export const useApp = () => {
   };
 
   const actions = {
-    addHabit, updateHabit, deleteHabit, toggleHabitArchive,
-    completeHabit, missHabit, undoHabit,
-    activateRestDay, togglePause,
-    addCustomPunishment, removeCustomPunishment,
-    buyItem, updateSettings, clearPunishment,
+    addHabit, 
+    updateHabit, 
+    deleteHabit, 
+    toggleHabitArchive,
+    completeHabit, 
+    missHabit, 
+    undoHabit,
+    activateRestDay, 
+    togglePause,
+    addCustomPunishment, 
+    removeCustomPunishment,
+    buyItem, 
+    updateSettings, 
+    clearPunishment,
     exportData: () => exportData(state),
     importData: (file) => importData(file, (data) => setState(data)),
     resetData: () => resetData(),
