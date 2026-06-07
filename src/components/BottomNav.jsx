@@ -4,12 +4,11 @@ import { NavLink } from 'react-router-dom';
 const BottomNav = () => {
   const links = [
     { to: '/', icon: '🏠', label: 'Dashboard' },
-    { to: '/habits', icon: '📜', label: 'Habits' },
+    { to: '/habits', icon: '', label: 'Habits' },
     { to: '/calendar', icon: '📅', label: 'Calendar' },
     { to: '/shop', icon: '🛒', label: 'Shop' },
     { to: '/reports', icon: '📊', label: 'Reports' },
-    { to: '/temple', icon: '🏛️', label: 'Temple' },
-    { to: '/settings', icon: '⚙️', label: 'Settings' }
+    { to: '/settings', icon: '️', label: 'Settings' }
   ];
 
   return (
