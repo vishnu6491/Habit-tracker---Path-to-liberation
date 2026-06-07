@@ -585,3 +585,8 @@ body {
   text-transform: uppercase;
   letter-spacing: 1px;
 }
+.scene-bg-fallback {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(180deg, #1a0b2e 0%, #2d1b4e 50%, #0f0518 100%);
+  z-index: 0;
+}
