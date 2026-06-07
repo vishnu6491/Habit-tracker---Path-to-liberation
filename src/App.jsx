@@ -11,7 +11,6 @@ import Settings from './pages/Settings';
 
 function App() {
   const { state, actions } = useApp();
-
   return (
     <Router>
       <div className="app-container">
@@ -30,5 +29,4 @@ function App() {
     </Router>
   );
 }
-
 export default App;
