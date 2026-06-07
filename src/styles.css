@@ -590,3 +590,23 @@ body {
   background: linear-gradient(180deg, #1a0b2e 0%, #2d1b4e 50%, #0f0518 100%);
   z-index: 0;
 }
+/* Calendar Day Colors */
+.calendar-day.green {
+  background: rgba(76, 175, 80, 0.3);
+  border: 1px solid #4caf50;
+}
+
+.calendar-day.yellow {
+  background: rgba(255, 152, 0, 0.3);
+  border: 1px solid #ff9800;
+}
+
+.calendar-day.red {
+  background: rgba(244, 67, 54, 0.3);
+  border: 1px solid #f44336;
+}
+
+.calendar-day.neutral {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
