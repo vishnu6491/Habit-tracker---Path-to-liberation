@@ -86,14 +86,14 @@ export const BUILT_IN_PUNISHMENTS = [
 ];
 
 export const SHOP_ITEMS = [
-  { id: 'mat', name: 'Meditation Mat', cost: 200, slot: 'floor', desc: 'A sacred space for reflection.', image: './equipment/mat.png' },
-  { id: 'staff', name: 'Wooden Staff', cost: 500, slot: 'hand', desc: 'Support for the long journey.', image: './equipment/staff.png' },
-  { id: 'beads', name: 'Prayer Beads', cost: 800, slot: 'neck', desc: 'For counting mantras.', image: './equipment/beads.png' },
-  { id: 'ring', name: 'Aura Ring', cost: 1500, slot: 'aura', desc: 'Amplifies spiritual presence.', image: './equipment/aura-ring.png' },
-  { id: 'robe', name: 'Sacred Robe', cost: 2500, slot: 'body', desc: 'Garment of the disciplined.', image: './equipment/robe.png' },
-  { id: 'halo', name: 'Golden Halo', cost: 5000, slot: 'head', desc: 'Sign of inner light.', image: './equipment/halo.png' },
-  { id: 'throne', name: 'Lotus Throne', cost: 8000, slot: 'seat', desc: 'Seat of the Masters.', image: './equipment/throne.png' },
-  { id: 'wings', name: 'Divine Wings', cost: 12000, slot: 'back', desc: 'Transcendence made visible.', image: './equipment/wings.png' }
+  { id: 'mat', name: 'Meditation Mat', cost: 200, slot: 'floor', desc: 'A sacred space for reflection.', image: '/equipment/mat.png' },
+  { id: 'staff', name: 'Wooden Staff', cost: 500, slot: 'hand', desc: 'Support for the long journey.', image: '/equipment/staff.png' },
+  { id: 'beads', name: 'Prayer Beads', cost: 800, slot: 'neck', desc: 'For counting mantras.', image: '/equipment/beads.png' },
+  { id: 'ring', name: 'Aura Ring', cost: 1500, slot: 'aura', desc: 'Amplifies spiritual presence.', image: '/equipment/aura-ring.png' },
+  { id: 'robe', name: 'Sacred Robe', cost: 2500, slot: 'body', desc: 'Garment of the disciplined.', image: '/equipment/robe.png' },
+  { id: 'halo', name: 'Golden Halo', cost: 5000, slot: 'head', desc: 'Sign of inner light.', image: '/equipment/halo.png' },
+  { id: 'throne', name: 'Lotus Throne', cost: 8000, slot: 'seat', desc: 'Seat of the Masters.', image: '/equipment/throne.png' },
+  { id: 'wings', name: 'Divine Wings', cost: 12000, slot: 'back', desc: 'Transcendence made visible.', image: '/equipment/wings.png' }
 ];
 
 export const ACHIEVEMENTS = [  { id: 'first_habit', name: 'First Step', desc: 'Complete your first habit', condition: (s) => s.totalCompleted >= 1 },
