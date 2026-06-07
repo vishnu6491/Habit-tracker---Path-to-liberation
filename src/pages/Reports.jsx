@@ -3,30 +3,103 @@ import React, { useState } from 'react';
 const Reports = ({ state }) => {
   const [view, setView] = useState('daily');
   
-  const getCompletionData = (daysBack) => {
+  const getDailyData = () => {
     const data = [];
-    for (let i = daysBack - 1; i >= 0; i--) {
+    for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split('T')[0];
       const log = state.logs[dateStr];
-      const activeCount = state.habits.filter(h => h.active).length;
+      const dueHabits = state.habits.filter(h => h.active); // Simplified for report
       const completedCount = log ? log.completed.length : 0;
-      const pct = activeCount > 0 ? Math.round((completedCount / activeCount) * 100) : 0;
-      data.push({ date: dateStr, pct });
+      const totalDue = dueHabits.length;
+      const pct = totalDue > 0 ? Math.round((completedCount / totalDue) * 100) : 0;
+      data.push({ label: d.toLocaleDateString('en', { weekday: 'short' }), pct, date: dateStr });
     }
     return data;
   };
 
-  const data = view === 'daily' ? getCompletionData(7) : view === 'weekly' ? getCompletionData(28) : getCompletionData(30);
+  const getWeeklyData = () => {
+    const weeks = [];
+    const today = new Date();
+    // Get last 4 weeks
+    for (let w = 3; w >= 0; w--) {
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - (today.getDay() + (w * 7)));
+      
+      let totalPct = 0;
+      let daysCounted = 0;
+      
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(weekStart);
+        d.setDate(weekStart.getDate() + i);
+        if (d > today) break;
+        
+        const dateStr = d.toISOString().split('T')[0];
+        const log = state.logs[dateStr];
+        const dueHabits = state.habits.filter(h => h.active);
+        const completedCount = log ? log.completed.length : 0;
+        const totalDue = dueHabits.length;
+        const pct = totalDue > 0 ? (completedCount / totalDue) * 100 : 0;
+        
+        totalPct += pct;
+        daysCounted++;
+      }
+      
+      const avgPct = daysCounted > 0 ? Math.round(totalPct / daysCounted) : 0;
+      // Calculate week number of the year      const oneJan = new Date(weekStart.getFullYear(), 0, 1);
+      const numberOfDays = Math.floor((weekStart - oneJan) / (24 * 60 * 60 * 1000));
+      const weekNum = Math.ceil((numberOfDays + oneJan.getDay() + 1) / 7);
+      
+      weeks.push({ label: `Week ${weekNum}`, pct: avgPct });
+    }
+    return weeks;
+  };
+
+  const getMonthlyData = () => {
+    const months = [];
+    const today = new Date();
+    // Get last 3 months
+    for (let m = 2; m >= 0; m--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - m, 1);
+      const monthName = d.toLocaleString('default', { month: 'long' });
+      
+      let totalPct = 0;
+      let daysCounted = 0;
+      const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      
+      for (let i = 1; i <= daysInMonth; i++) {
+        const checkDate = new Date(d.getFullYear(), d.getMonth(), i);
+        if (checkDate > today) break;
+        
+        const dateStr = checkDate.toISOString().split('T')[0];
+        const log = state.logs[dateStr];
+        const dueHabits = state.habits.filter(h => h.active);
+        const completedCount = log ? log.completed.length : 0;
+        const totalDue = dueHabits.length;
+        const pct = totalDue > 0 ? (completedCount / totalDue) * 100 : 0;
+        
+        totalPct += pct;
+        daysCounted++;
+      }
+      
+      const avgPct = daysCounted > 0 ? Math.round(totalPct / daysCounted) : 0;
+      months.push({ label: monthName, pct: avgPct });
+    }
+    return months;
+  };
+
+  let data = [];
+  if (view === 'daily') data = getDailyData();
+  else if (view === 'weekly') data = getWeeklyData();
+  else data = getMonthlyData();
+
   const avgCompletion = data.length > 0 ? Math.round(data.reduce((sum, d) => sum + d.pct, 0) / data.length) : 0;
 
-  return (
-    <div>
+  return (    <div>
       <h2 className="gold-text" style={{fontSize: '20px'}}>Reports</h2>
       
       <div className="card">
-        <h3 style={{fontSize: '16px', marginBottom: '12px'}}>Completion Overview</h3>
         <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
           {['daily', 'weekly', 'monthly'].map(v => (
             <button key={v} className={`btn ${view === v ? '' : 'btn-outline'}`} style={{ flex: 1, fontSize: '12px' }} onClick={() => setView(v)}>{v}</button>
@@ -39,9 +112,9 @@ const Reports = ({ state }) => {
         <div style={{ marginTop: '12px' }}>
           {data.map((d, i) => (
             <div key={i} style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#888', marginBottom: '4px' }}>
-                <span>{d.date}</span>
-                <span>{d.pct}%</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#ccc', marginBottom: '4px' }}>
+                <span style={{fontWeight: 'bold'}}>{d.label}</span>
+                <span className="gold-text">{d.pct}%</span>
               </div>
               <div className="progress-bar">
                 <div className="progress-fill" style={{ width: `${d.pct}%` }}></div>
@@ -54,43 +127,15 @@ const Reports = ({ state }) => {
       <div className="card">
         <h3 style={{fontSize: '16px', marginBottom: '12px'}}>Habit Streaks 🔥</h3>
         {state.habits.filter(h => h.active).length === 0 ? (
-          <p style={{fontSize: '13px', color: '#888', textAlign: 'center', padding: '20px'}}>No active habits yet</p>
+          <p style={{fontSize: '13px', color: '#888', textAlign: 'center'}}>No active habits</p>
         ) : (
           state.habits.filter(h => h.active).map(habit => (
-            <div key={habit.id} className="report-bar">
-              <div className="report-bar-label">
-                <div style={{ fontWeight: '600', fontSize: '13px', marginBottom: '2px' }}>{habit.name}</div>
-                <div style={{ fontSize: '11px', color: '#888' }}>{habit.difficulty} • {habit.frequency}</div>
-              </div>
-              <div className="report-bar-value">
-                <div style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--theme-secondary)' }}>{habit.currentStreak}</div>
-                <div style={{ fontSize: '10px', color: '#888' }}>days</div>
-              </div>
+            <div key={habit.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <span style={{fontSize: '13px'}}>{habit.name}</span>
+              <span className="gold-text" style={{fontSize: '13px', fontWeight: 'bold'}}>{habit.currentStreak} days</span>
             </div>
           ))
         )}
-      </div>
-
-      <div className="card">
-        <h3 style={{fontSize: '16px', marginBottom: '12px'}}>Statistics</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          <div style={{ background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
-            <p style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>Total Completed</p>
-            <p className="gold-text" style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>{state.user.totalCompleted}</p>
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
-            <p style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>Current Level</p>
-            <p className="primary-text" style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>{state.user.level}</p>
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
-            <p style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>Discipline Score</p>
-            <p className="gold-text" style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>{Math.round(state.user.progress)}%</p>
-          </div>
-          <div style={{ background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px', textAlign: 'center' }}>
-            <p style={{ fontSize: '11px', color: '#888', marginBottom: '4px' }}>Shop XP</p>
-            <p className="primary-text" style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>{state.user.xp}</p>
-          </div>
-        </div>
       </div>
     </div>
   );
