@@ -42,13 +42,12 @@ const Dashboard = ({ state, actions }) => {
         </div>
       )}
 
-      {/* THE NEW STACKED SCENE */}
       <SaintVisuals progress={state.user.progress} inventory={state.user.inventory} />
       
       <div className="card">
         <h3 style={{fontSize: '16px'}}>Liberation Meter</h3>
-        <p>Level: <span className="gold-text">{levelInfo.name}</span></p>        <p>Shop XP: <span className="gold-text">{state.user.xp}</span></p>
-        <p>Discipline: <span className="gold-text">{Math.round(state.user.progress)}%</span></p>
+        <p>Level: <span className="gold-text">{levelInfo.name}</span></p>
+        <p>Shop XP: <span className="gold-text">{state.user.xp}</span></p>        <p>Discipline: <span className="gold-text">{Math.round(state.user.progress)}%</span></p>
         
         <div className="mood-container">
           {moods.map((mood, i) => (
@@ -81,11 +80,11 @@ const Dashboard = ({ state, actions }) => {
                 <strong style={{fontSize: '14px'}}>{habit.name}</strong>
                 <div style={{ fontSize: '11px', color: '#888' }}>{habit.difficulty} • {habit.xp} XP</div>
               </div>
-              <div>
+              <div style={{display: 'flex', gap: '8px'}}>
                 {!isDone && !isMissed && (
                   <>
-                    <button className="btn" style={{ width: 'auto', padding: '6px 12px', fontSize: '12px' }} onClick={() => actions.completeHabit(habit.id)}>✓</button>
-                    <button className="btn btn-outline" style={{ width: 'auto', padding: '6px 12px', marginLeft: '8px', fontSize: '12px' }} onClick={() => actions.missHabit(habit.id)}></button>
+                    <button className="btn" style={{ width: 'auto', padding: '6px 12px', fontSize: '14px' }} onClick={() => actions.completeHabit(habit.id)}>✓</button>
+                    <button className="btn btn-danger" style={{ width: 'auto', padding: '6px 12px', fontSize: '14px' }} onClick={() => actions.missHabit(habit.id)}>✗</button>
                   </>
                 )}
                 {(isDone || isMissed) && <button className="btn btn-outline" style={{ width: 'auto', padding: '4px 8px', fontSize: '10px' }} onClick={() => actions.undoHabit(habit.id)}>Undo</button>}
