@@ -4,8 +4,6 @@ import { SHOP_ITEMS } from '../data/constants';
 
 const SaintVisuals = ({ progress, inventory }) => {
   const levelInfo = getSaintLevel(progress);
-  
-  // Map inventory to equipped items
   const equipped = {};
   inventory.forEach(id => {
     const item = SHOP_ITEMS.find(i => i.id === id);
@@ -14,31 +12,19 @@ const SaintVisuals = ({ progress, inventory }) => {
 
   return (
     <div className="saint-scene">
-      {/* LAYER 1: Environment Background */}
-      <img 
-        src={levelInfo.environment} 
-        alt={levelInfo.env} 
-        className="scene-env" 
-      />
+      <div className="scene-bg-fallback" />
+      <img src={levelInfo.environment} alt="" className="scene-env" onError={e => e.target.style.display = 'none'} />
+      <img src={levelInfo.avatar} alt="" className="scene-avatar" onError={e => e.target.style.display = 'none'} />
       
-      {/* LAYER 2: Avatar (Center) */}
-      <img 
-        src={levelInfo.avatar} 
-        alt={levelInfo.name} 
-        className="scene-avatar" 
-      />
-
-      {/* LAYER 3: Equipment (Front) */}
-      {equipped.wings && <img src={equipped.wings.image} className="equip equip-wings" alt="Wings" />}
-      {equipped.halo && <img src={equipped.halo.image} className="equip equip-halo" alt="Halo" />}
-      {equipped.staff && <img src={equipped.staff.image} className="equip equip-staff" alt="Staff" />}
-      {equipped.beads && <img src={equipped.beads.image} className="equip equip-beads" alt="Beads" />}
-      {equipped.robe && <img src={equipped.robe.image} className="equip equip-robe" alt="Robe" />}
-      {equipped.ring && <img src={equipped.ring.image} className="equip equip-ring" alt="Ring" />}
-      {equipped.throne && <img src={equipped.throne.image} className="equip equip-throne" alt="Throne" />}
-      {equipped.mat && <img src={equipped.mat.image} className="equip equip-mat" alt="Mat" />}
+      {equipped.wings && <img src={equipped.wings.image} className="equip equip-wings" alt="" onError={e => e.target.style.display = 'none'} />}
+      {equipped.halo && <img src={equipped.halo.image} className="equip equip-halo" alt="" onError={e => e.target.style.display = 'none'} />}
+      {equipped.staff && <img src={equipped.staff.image} className="equip equip-staff" alt="" onError={e => e.target.style.display = 'none'} />}
+      {equipped.beads && <img src={equipped.beads.image} className="equip equip-beads" alt="" onError={e => e.target.style.display = 'none'} />}
+      {equipped.robe && <img src={equipped.robe.image} className="equip equip-robe" alt="" onError={e => e.target.style.display = 'none'} />}
+      {equipped.ring && <img src={equipped.ring.image} className="equip equip-ring" alt="" onError={e => e.target.style.display = 'none'} />}
+      {equipped.throne && <img src={equipped.throne.image} className="equip equip-throne" alt="" onError={e => e.target.style.display = 'none'} />}
+      {equipped.mat && <img src={equipped.mat.image} className="equip equip-mat" alt="" onError={e => e.target.style.display = 'none'} />}
       
-      {/* Level Name Label */}
       <div className="scene-label">{levelInfo.name}</div>
     </div>
   );
