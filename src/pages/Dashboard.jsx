@@ -25,6 +25,16 @@ const Dashboard = ({ state, actions }) => {
       <h2 className="gold-text" style={{ textAlign: 'center', marginBottom: '12px', fontSize: '20px' }}>Habit Quest</h2>
       {state.settings.restDayActive && <div className="card" style={{ borderColor: '#FFD700', background: 'rgba(255,215,0,0.1)' }}><h3 style={{ color: '#FFD700', fontSize: '14px', margin: 0 }}> Rest Day Active</h3></div>}
       
+      {/* FIXED: Show dashboard punishment */}
+      {state.settings.dashboardPunishment && (
+        <div className="card" style={{ borderColor: '#f44336', background: 'rgba(244,67,54,0.1)' }}>
+          <h3 style={{ color: '#f44336', fontSize: '16px' }}>⚠️ Daily Punishment</h3>
+          <p style={{ fontSize: '13px', marginBottom: '8px' }}>You missed too many habits today</p>
+          <h4 className="gold-text" style={{ margin: '8px 0' }}>{state.settings.dashboardPunishment}</h4>
+          <button className="btn" onClick={actions.clearPunishment}>Mark as Completed</button>
+        </div>
+      )}
+      
       <SaintVisuals progress={state.user.progress} inventory={state.user.inventory} />
       
       <div className="card">
@@ -38,14 +48,6 @@ const Dashboard = ({ state, actions }) => {
         <p style={{textAlign: 'center', fontSize: '12px', color: '#888', marginTop: '8px'}}>Today: {completionPct}% ({todayLog.completed.length}/{dueHabits.length})</p>
         {state.user.progress < 95 && <ProgressBar current={state.user.progress - levelInfo.minProgress} max={nextLevel.minProgress - levelInfo.minProgress} label={`To ${nextLevel.name}`} />}
       </div>
-
-      {state.settings.currentPunishment && (
-        <div className="card" style={{ borderColor: '#f44336' }}>
-          <h3 style={{ color: '#f44336', fontSize: '16px' }}>️ Punishment</h3>
-          <h4 className="gold-text">{state.settings.currentPunishment}</h4>
-          <button className="btn" onClick={actions.clearPunishment}>Completed</button>
-        </div>
-      )}
 
       <div className="card">
         <h3 style={{fontSize: '16px'}}>Today's Quests</h3>
@@ -62,7 +64,7 @@ const Dashboard = ({ state, actions }) => {
                 {!isDone && !isMissed && (
                   <>
                     <button className="btn" style={{ width: 'auto', padding: '6px 12px', fontSize: '14px' }} onClick={() => actions.completeHabit(habit.id)}>✓</button>
-                    <button className="btn btn-danger" style={{ width: 'auto', padding: '6px 12px', fontSize: '16px' }} onClick={() => actions.missHabit(habit.id)}></button>
+                    <button className="btn btn-danger" style={{ width: 'auto', padding: '6px 12px', fontSize: '16px' }} onClick={() => actions.missHabit(habit.id)}>✗</button>
                   </>
                 )}
                 {(isDone || isMissed) && <button className="btn btn-outline" style={{ width: 'auto', padding: '4px 8px', fontSize: '10px' }} onClick={() => actions.undoHabit(habit.id)}>Undo</button>}
