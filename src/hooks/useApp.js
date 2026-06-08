@@ -63,20 +63,19 @@ export const useApp = () => {
   const deleteHabit = (id) => setState(prev => ({ ...prev, habits: prev.habits.filter(h => h.id !== id) }));
   const toggleHabitArchive = (id) => setState(prev => ({ ...prev, habits: prev.habits.map(h => h.id === id ? { ...h, active: !h.active } : h) }));
 
-  const calculateRealTimeProgress = (currentProgress, todayCompletionPct, baseProgress) => {
-    const dailyGain = 0.5;
+  // FIXED: Restored progress calculation
+  const calculateRealTimeProgress = (baseProgress, todayCompletionPct) => {
+    const dailyGain = 0.5; // Takes 30 days of 100% to gain 15% progress
     const factor = (todayCompletionPct - 50) / 50;
     const tempGain = dailyGain * factor;
     return Math.max(0, Math.min(100, baseProgress + tempGain));
   };
 
-  // FIXED: Punishment threshold based on level
   const getPunishmentThreshold = (level) => {
     return 50 + ((level - 1) * (30 / 6)); // 50% at level 1, 80% at level 7
   };
 
-  // FIXED: Check consecutive misses for a specific habit
-  const checkConsecutiveMisses = (habitId, logs, activeHabits) => {
+  const checkConsecutiveMisses = (habitId, logs) => {
     const today = getToday();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
@@ -91,25 +90,21 @@ export const useApp = () => {
     if (missedToday && missedYesterday) {
       let consecutiveCount = 2;
       let checkDate = new Date(yesterday);
-      
       while (true) {
         checkDate.setDate(checkDate.getDate() - 1);
         const checkStr = checkDate.toISOString().split('T')[0];
         const checkLog = logs[checkStr];
-                if (checkLog && checkLog.missed.includes(habitId)) {
+        if (checkLog && checkLog.missed.includes(habitId)) {
           consecutiveCount++;
-        } else {
-          break;
+        } else {          break;
         }
       }
-      
       return consecutiveCount;
     }
-    
     return 0;
   };
 
-  // FIXED: Recalculate everything from logs
+  // FIXED: Restored level and progress calculation in recalculateState
   const recalculateState = (prev) => {
     const today = getToday();
     const todayLog = prev.logs[today] || { completed: [], missed: [] };
@@ -118,43 +113,68 @@ export const useApp = () => {
     const completionPct = totalDue > 0 ? (todayLog.completed.length / totalDue) * 100 : 100;
     const threshold = getPunishmentThreshold(prev.user.level);
     
-    // Type 1 Punishment: Dashboard (missed 50%+ of today's habits)
-    let dashboardPunishment = null;
+    // Type 1 Punishment: Dashboard
+    let dashboardPunishment = prev.settings.dashboardPunishment; // Keep existing if already there
     if (completionPct < threshold) {
       const pool = prev.settings.punishmentMode === 'custom' 
         ? prev.settings.customPunishments 
         : prev.settings.punishmentMode === 'both' 
           ? [...BUILT_IN_PUNISHMENTS, ...prev.settings.customPunishments]
           : BUILT_IN_PUNISHMENTS;
-      dashboardPunishment = pool[Math.floor(Math.random() * pool.length)] || '20 Push-ups';
+      // Only assign a new one if there isn't one already active
+      if (!dashboardPunishment) {
+        dashboardPunishment = pool[Math.floor(Math.random() * pool.length)] || '20 Push-ups';
+      }
+    } else {
+      // Clear it if they met the threshold
+      dashboardPunishment = null; 
     }
     
-    // Type 2 Punishment: Calendar (consecutive misses per habit)
+    // Type 2 Punishment: Calendar
     const consecutiveMissMap = {};
     dueHabits.forEach(habit => {
-      const count = checkConsecutiveMisses(habit.id, prev.logs, dueHabits);
+      const count = checkConsecutiveMisses(habit.id, prev.logs);
       if (count >= 2) {
         consecutiveMissMap[habit.id] = count;
       }
     });
     
-    // Recalculate XP
+    // Recalculate XP & Total Completed
     let totalXP = 0;
     let totalCompleted = 0;
     Object.values(prev.logs).forEach(log => {
       log.completed.forEach(habitId => {
         const habit = prev.habits.find(h => h.id === habitId);
-        if (habit) {
-          totalXP += habit.xp;          totalCompleted++;
+        if (habit) {          totalXP += habit.xp;
+          totalCompleted++;
         }
       });
     });
     
-    // Recalculate streaks for all habits
+    // Recalculate streaks
     const recalculatedHabits = prev.habits.map(habit => ({
       ...habit,
       currentStreak: calculateStreakForHabit(habit.id, prev.logs)
     }));
+
+    // FIXED: Calculate Progress and Level
+    const baseProgress = prev.user.baseProgress !== undefined ? prev.user.baseProgress : prev.user.progress;
+    const realTimeProgress = calculateRealTimeProgress(baseProgress, completionPct);
+    
+    let newLevel = 1;
+    for (let i = SAINT_LEVELS.length - 1; i >= 0; i--) {
+      if (realTimeProgress >= SAINT_LEVELS[i].minProgress) {
+        newLevel = SAINT_LEVELS[i].level;
+        break;
+      }
+    }
+
+    // Filter inventory if XP dropped
+    let newInventory = [...prev.user.inventory];
+    newInventory = newInventory.filter(itemId => {
+      const item = SHOP_ITEMS.find(i => i.id === itemId);
+      return item && totalXP >= item.cost;
+    });
     
     return {
       dashboardPunishment,
@@ -162,7 +182,10 @@ export const useApp = () => {
       totalXP,
       totalCompleted,
       recalculatedHabits,
-      completionPct
+      completionPct,
+      realTimeProgress,
+      newLevel,
+      newInventory
     };
   };
 
@@ -171,8 +194,7 @@ export const useApp = () => {
     const habit = state.habits.find(h => h.id === habitId);
     if (!habit) return;
 
-    setState(prev => {
-      const todayLog = prev.logs[today] || { completed: [], missed: [] };
+    setState(prev => {      const todayLog = prev.logs[today] || { completed: [], missed: [] };
       if (todayLog.completed.includes(habitId)) return prev;
 
       const newTodayLog = { 
@@ -181,25 +203,21 @@ export const useApp = () => {
       };
       
       const newLogs = { ...prev.logs, [today]: newTodayLog };
-      const newHabits = prev.habits.map(h => {
-        if (h.id === habitId) {
-          const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-          const wasDoneYesterday = prev.logs[yesterday.toISOString().split('T')[0]]?.completed.includes(habitId);
-          return { ...h, currentStreak: wasDoneYesterday ? h.currentStreak + 1 : 1 };
-        }
-        return h;
-      });
-      
-      const recalculated = recalculateState({ ...prev, logs: newLogs, habits: newHabits });
+      const recalculated = recalculateState({ ...prev, logs: newLogs });
 
       const newUser = {
         ...prev.user,
-        xp: recalculated.totalXP,        totalCompleted: recalculated.totalCompleted,
+        xp: recalculated.totalXP,
+        totalCompleted: recalculated.totalCompleted,
+        progress: recalculated.realTimeProgress,
+        baseProgress: recalculated.realTimeProgress, // Save new baseline
+        level: recalculated.newLevel,
+        inventory: recalculated.newInventory
       };
 
       return { 
         ...prev, 
-        habits: newHabits,
+        habits: recalculated.recalculatedHabits,
         logs: newLogs, 
         user: newUser,
         settings: { 
@@ -225,11 +243,19 @@ export const useApp = () => {
       
       const newLogs = { ...prev.logs, [today]: newTodayLog };
       const recalculated = recalculateState({ ...prev, logs: newLogs });
-
       return {
         ...prev,
+        habits: recalculated.recalculatedHabits,
         logs: newLogs,
-        user: { ...prev.user, xp: recalculated.totalXP, totalCompleted: recalculated.totalCompleted },
+        user: { 
+          ...prev.user, 
+          xp: recalculated.totalXP, 
+          totalCompleted: recalculated.totalCompleted,
+          progress: recalculated.realTimeProgress,
+          baseProgress: recalculated.realTimeProgress,
+          level: recalculated.newLevel,
+          inventory: recalculated.newInventory
+        },
         settings: { 
           ...prev.settings, 
           dashboardPunishment: recalculated.dashboardPunishment,
@@ -243,7 +269,8 @@ export const useApp = () => {
     const today = getToday();
     setState(prev => {
       const todayLog = prev.logs[today];
-      if (!todayLog) return prev;      
+      if (!todayLog) return prev;
+      
       const wasCompleted = todayLog.completed.includes(habitId);
       const wasMissed = todayLog.missed.includes(habitId);
       
@@ -256,18 +283,18 @@ export const useApp = () => {
 
       const newLogs = { ...prev.logs, [today]: newTodayLog };
       const recalculated = recalculateState({ ...prev, logs: newLogs });
-      
-      const habit = prev.habits.find(h => h.id === habitId);
-      let xpAdjustment = 0;
-      if (wasCompleted && habit) xpAdjustment = -habit.xp;
 
       return {
         ...prev,
+        habits: recalculated.recalculatedHabits,
         logs: newLogs,
         user: {
           ...prev.user,
           xp: Math.max(0, recalculated.totalXP),
-          totalCompleted: recalculated.totalCompleted
+          totalCompleted: recalculated.totalCompleted,
+          progress: recalculated.realTimeProgress,          baseProgress: recalculated.realTimeProgress,
+          level: recalculated.newLevel,
+          inventory: recalculated.newInventory
         },
         settings: { 
           ...prev.settings, 
@@ -293,6 +320,7 @@ export const useApp = () => {
       setState(prev => ({ ...prev, user: { ...prev.user, xp: prev.user.xp - item.cost, inventory: [...prev.user.inventory, item.id] } }));
     }
   };
+
   const updateSettings = (updates) => {
     setState(prev => ({ ...prev, settings: { ...prev.settings, ...updates } }));
     if (updates.theme) applyTheme(updates.theme);
