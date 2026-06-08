@@ -9,7 +9,6 @@ const Dashboard = ({ state, actions }) => {
   const todayLog = state.logs[today] || { completed: [], missed: [] };
   const dueHabits = actions.getDueHabits();
   
-  // FIXED: Calculate display progress including today's pending gain
   const displayProgress = Math.min(100, Math.max(0, state.user.progress + (state.user.pendingDailyGain || 0)));
   const levelInfo = getSaintLevel(displayProgress);
   const nextLevel = SAINT_LEVELS.find(l => l.minProgress > displayProgress) || SAINT_LEVELS[SAINT_LEVELS.length - 1];
@@ -18,10 +17,10 @@ const Dashboard = ({ state, actions }) => {
 
   const getMood = (pct) => pct === 100 ? 4 : pct >= 80 ? 3 : pct >= 50 ? 2 : pct >= 20 ? 1 : 0;
   const currentMood = getMood(completionPct);
-  const moods = ['', '😟', '', '🙂', ''];
+  const moods = ['', '', '', '🙂', ''];
 
   if (state.settings.isPaused) {
-    return <div style={{ textAlign: 'center', padding: '40px 20px' }}><h2 className="gold-text">⏸️ Journey Paused</h2><p style={{ color: '#888' }}>{state.settings.pauseReason}</p></div>;
+    return <div style={{ textAlign: 'center', padding: '40px 20px' }}><h2 className="gold-text">️ Journey Paused</h2><p style={{ color: '#888' }}>{state.settings.pauseReason}</p></div>;
   }
 
   return (
@@ -44,12 +43,23 @@ const Dashboard = ({ state, actions }) => {
         <h3 style={{fontSize: '16px'}}>Liberation Meter</h3>
         <p>Level: <span className="gold-text">{levelInfo.name}</span></p>
         <p>Shop XP: <span className="gold-text">{state.user.xp}</span></p>
-        <p>Discipline: <span className="gold-text">{Math.round(displayProgress)}%</span></p>
+        
+        {/* FIXED: Clearer Label */}
+        <p style={{marginBottom: '4px'}}>Discipline Score: <span className="gold-text" style={{fontSize: '18px'}}>{Math.round(displayProgress)}%</span></p>
+        
         <div className="mood-container">
           {moods.map((mood, i) => <span key={i} className={`mood-item ${i === currentMood ? 'active' : ''}`}>{mood}</span>)}
         </div>
         <p style={{textAlign: 'center', fontSize: '12px', color: '#888', marginTop: '8px'}}>Today: {completionPct}% ({todayLog.completed.length}/{dueHabits.length})</p>
-        {displayProgress < 95 && <ProgressBar current={displayProgress - levelInfo.minProgress} max={nextLevel.minProgress - levelInfo.minProgress} label={`To ${nextLevel.name}`} />}
+        
+        {/* FIXED: Progress Bar Label */}
+        {displayProgress < 95 && (
+          <ProgressBar 
+            current={displayProgress} 
+            max={nextLevel.minProgress} 
+            label={`Next Level: ${nextLevel.name} (Requires ${nextLevel.minProgress}% Discipline)`} 
+          />
+        )}
       </div>
 
       <div className="card">
@@ -67,7 +77,7 @@ const Dashboard = ({ state, actions }) => {
                 {!isDone && !isMissed && (
                   <>
                     <button className="btn" style={{ width: 'auto', padding: '6px 12px', fontSize: '14px' }} onClick={() => actions.completeHabit(habit.id)}>✓</button>
-                    <button className="btn btn-danger" style={{ width: 'auto', padding: '6px 12px', fontSize: '16px' }} onClick={() => actions.missHabit(habit.id)}></button>
+                    <button className="btn btn-danger" style={{ width: 'auto', padding: '6px 12px', fontSize: '16px' }} onClick={() => actions.missHabit(habit.id)}>✗</button>
                   </>
                 )}
                 {(isDone || isMissed) && <button className="btn btn-outline" style={{ width: 'auto', padding: '4px 8px', fontSize: '10px' }} onClick={() => actions.undoHabit(habit.id)}>Undo</button>}
