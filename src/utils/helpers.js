@@ -11,7 +11,6 @@ export const getSaintLevel = (progress) => {
 
 export const generateId = () => Math.random().toString(36).substr(2, 9);
 
-// NEW: Check if a habit was due on a specific date
 export const isHabitDueOnDate = (habit, date) => {
   const dayOfWeek = date.getDay();
   
@@ -27,4 +26,23 @@ export const isHabitDueOnDate = (habit, date) => {
     default:
       return true;
   }
+};
+
+// NEW: Calculate streak for a specific habit from logs
+export const calculateStreakForHabit = (habitId, logs) => {
+  let streak = 0;
+  let currentDate = new Date();
+  
+  while (true) {
+    const dateStr = currentDate.toISOString().split('T')[0];
+    const log = logs[dateStr];
+    
+    if (log && log.completed.includes(habitId)) {
+      streak++;
+      currentDate.setDate(currentDate.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
 };
