@@ -41,6 +41,9 @@ jobs:
       - name: Build APK with Gradle
         working-directory: ./android
         run: |
+          # Make gradlew executable
+          chmod +x gradlew
+          
           # Write gradle.properties
           cat > gradle.properties << EOF
           org.gradle.jvmargs=-Xmx1024m -XX:MaxMetaspaceSize=512m
