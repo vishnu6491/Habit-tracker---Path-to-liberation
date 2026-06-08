@@ -43,7 +43,9 @@ const getDefaultState = () => ({
   logs: {},
   user: {
     xp: 0,
-    progress: 0,
+    progress: 0, // Permanent progress
+    pendingDailyGain: 0, // Temporary progress for today
+    lastProgressDate: null, // To track day rollover
     totalCompleted: 0,
     level: 1,
     inventory: [],
@@ -56,8 +58,8 @@ const getDefaultState = () => ({
     theme: 'crown',
     customPunishments: [],
     punishmentMode: 'both',
-    currentPunishment: null,
-    consecutiveMisses: {},
+    dashboardPunishment: null,
+    consecutiveMissMap: {},
     isPaused: false,
     pauseReason: '',
     restDayActive: false,
