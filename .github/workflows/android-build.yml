@@ -1,25 +1,25 @@
-name: Android APK Build
+name: Build APK
 
 on:
-  workflow_dispatch:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  build-apk:
+  build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: '18'
+          cache: 'npm'
 
-      - name: Install Dependencies
-        run: npm install
+      - name: Install dependencies
+        run: npm ci
 
       - name: Build Web App
         run: npm run build
@@ -27,20 +27,43 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
-          java-version: 17
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Increase file descriptor limit
+        run: |
+          sudo sysctl -w fs.file-max=65536
+          ulimit -n 65536
 
       - name: Sync Capacitor
-        run: npx cap sync android
+        run: |
+          npx cap sync android
+          cd android
+          chmod +x gradlew
+
+      - name: Clean Gradle Cache
+        run: |
+          cd android
+          ./gradlew clean || true
+          ./gradlew --stop || true
+          rm -rf ~/.gradle/caches/ || true
 
       - name: Build APK
         run: |
           cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug
+          export GRADLE_USER_HOME=/home/runner/.gradle
+          export JAVA_OPTS="-XX:MaxMetaspaceSize=512m -Xmx2g"
+          ./gradlew assembleDebug --no-daemon --no-parallel --max-workers=1
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: HabitQuest-APK
-          path: android/app/build/outputs/apk/debug/*.apk
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          
+      - name: Upload APK (Release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-unsigned
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
