@@ -8,8 +8,12 @@ const Dashboard = ({ state, actions }) => {
   const today = getToday();
   const todayLog = state.logs[today] || { completed: [], missed: [] };
   const dueHabits = actions.getDueHabits();
-  const levelInfo = getSaintLevel(state.user.progress);
-  const nextLevel = SAINT_LEVELS.find(l => l.minProgress > state.user.progress) || SAINT_LEVELS[SAINT_LEVELS.length - 1];
+  
+  // FIXED: Calculate display progress including today's pending gain
+  const displayProgress = Math.min(100, Math.max(0, state.user.progress + (state.user.pendingDailyGain || 0)));
+  const levelInfo = getSaintLevel(displayProgress);
+  const nextLevel = SAINT_LEVELS.find(l => l.minProgress > displayProgress) || SAINT_LEVELS[SAINT_LEVELS.length - 1];
+  
   const completionPct = dueHabits.length > 0 ? Math.round((todayLog.completed.length / dueHabits.length) * 100) : 0;
 
   const getMood = (pct) => pct === 100 ? 4 : pct >= 80 ? 3 : pct >= 50 ? 2 : pct >= 20 ? 1 : 0;
@@ -23,9 +27,8 @@ const Dashboard = ({ state, actions }) => {
   return (
     <div>
       <h2 className="gold-text" style={{ textAlign: 'center', marginBottom: '12px', fontSize: '20px' }}>Habit Quest</h2>
-      {state.settings.restDayActive && <div className="card" style={{ borderColor: '#FFD700', background: 'rgba(255,215,0,0.1)' }}><h3 style={{ color: '#FFD700', fontSize: '14px', margin: 0 }}> Rest Day Active</h3></div>}
+      {state.settings.restDayActive && <div className="card" style={{ borderColor: '#FFD700', background: 'rgba(255,215,0,0.1)' }}><h3 style={{ color: '#FFD700', fontSize: '14px', margin: 0 }}>🌙 Rest Day Active</h3></div>}
       
-      {/* FIXED: Show dashboard punishment */}
       {state.settings.dashboardPunishment && (
         <div className="card" style={{ borderColor: '#f44336', background: 'rgba(244,67,54,0.1)' }}>
           <h3 style={{ color: '#f44336', fontSize: '16px' }}>⚠️ Daily Punishment</h3>
@@ -35,18 +38,18 @@ const Dashboard = ({ state, actions }) => {
         </div>
       )}
       
-      <SaintVisuals progress={state.user.progress} inventory={state.user.inventory} />
+      <SaintVisuals progress={displayProgress} inventory={state.user.inventory} />
       
       <div className="card">
         <h3 style={{fontSize: '16px'}}>Liberation Meter</h3>
         <p>Level: <span className="gold-text">{levelInfo.name}</span></p>
         <p>Shop XP: <span className="gold-text">{state.user.xp}</span></p>
-        <p>Discipline: <span className="gold-text">{Math.round(state.user.progress)}%</span></p>
+        <p>Discipline: <span className="gold-text">{Math.round(displayProgress)}%</span></p>
         <div className="mood-container">
           {moods.map((mood, i) => <span key={i} className={`mood-item ${i === currentMood ? 'active' : ''}`}>{mood}</span>)}
         </div>
         <p style={{textAlign: 'center', fontSize: '12px', color: '#888', marginTop: '8px'}}>Today: {completionPct}% ({todayLog.completed.length}/{dueHabits.length})</p>
-        {state.user.progress < 95 && <ProgressBar current={state.user.progress - levelInfo.minProgress} max={nextLevel.minProgress - levelInfo.minProgress} label={`To ${nextLevel.name}`} />}
+        {displayProgress < 95 && <ProgressBar current={displayProgress - levelInfo.minProgress} max={nextLevel.minProgress - levelInfo.minProgress} label={`To ${nextLevel.name}`} />}
       </div>
 
       <div className="card">
@@ -64,7 +67,7 @@ const Dashboard = ({ state, actions }) => {
                 {!isDone && !isMissed && (
                   <>
                     <button className="btn" style={{ width: 'auto', padding: '6px 12px', fontSize: '14px' }} onClick={() => actions.completeHabit(habit.id)}>✓</button>
-                    <button className="btn btn-danger" style={{ width: 'auto', padding: '6px 12px', fontSize: '16px' }} onClick={() => actions.missHabit(habit.id)}>✗</button>
+                    <button className="btn btn-danger" style={{ width: 'auto', padding: '6px 12px', fontSize: '16px' }} onClick={() => actions.missHabit(habit.id)}></button>
                   </>
                 )}
                 {(isDone || isMissed) && <button className="btn btn-outline" style={{ width: 'auto', padding: '4px 8px', fontSize: '10px' }} onClick={() => actions.undoHabit(habit.id)}>Undo</button>}
