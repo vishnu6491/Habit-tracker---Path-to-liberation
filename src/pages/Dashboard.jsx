@@ -1,6 +1,5 @@
 import React from 'react';
-import { getToday, getSaintLevel } from '../utils/helpers';
-import { SAINT_LEVELS } from '../data/constants';
+import { getToday } from '../utils/helpers';
 import SaintVisuals from '../components/SaintVisuals';
 import ProgressBar from '../components/ProgressBar';
 
@@ -9,15 +8,15 @@ const Dashboard = ({ state, actions }) => {
   const todayLog = state.logs[today] || { completed: [], missed: [] };
   const dueHabits = actions.getDueHabits();
   
-  const displayProgress = Math.min(100, Math.max(0, state.user.progress + (state.user.pendingDailyGain || 0)));
-  const levelInfo = getSaintLevel(displayProgress);
-  const nextLevel = SAINT_LEVELS.find(l => l.minProgress > displayProgress) || SAINT_LEVELS[SAINT_LEVELS.length - 1];
-  
   const completionPct = dueHabits.length > 0 ? Math.round((todayLog.completed.length / dueHabits.length) * 100) : 0;
+
+  // Calculate display values
+  const displayLevelPoints = state.user.levelPoints + (state.user.pendingLevelPoints || 0);
+  const nextLevelThreshold = (state.user.level) * 100; // Level 1 needs 100 pts to reach Level 2
 
   const getMood = (pct) => pct === 100 ? 4 : pct >= 80 ? 3 : pct >= 50 ? 2 : pct >= 20 ? 1 : 0;
   const currentMood = getMood(completionPct);
-  const moods = ['', '', '', '🙂', ''];
+  const moods = ['😢', '😕', '😐', '🙂', '😁'];
 
   if (state.settings.isPaused) {
     return <div style={{ textAlign: 'center', padding: '40px 20px' }}><h2 className="gold-text">️ Journey Paused</h2><p style={{ color: '#888' }}>{state.settings.pauseReason}</p></div>;
@@ -26,7 +25,7 @@ const Dashboard = ({ state, actions }) => {
   return (
     <div>
       <h2 className="gold-text" style={{ textAlign: 'center', marginBottom: '12px', fontSize: '20px' }}>Habit Quest</h2>
-      {state.settings.restDayActive && <div className="card" style={{ borderColor: '#FFD700', background: 'rgba(255,215,0,0.1)' }}><h3 style={{ color: '#FFD700', fontSize: '14px', margin: 0 }}>🌙 Rest Day Active</h3></div>}
+      {state.settings.restDayActive && <div className="card" style={{ borderColor: '#FFD700', background: 'rgba(255,215,0,0.1)' }}><h3 style={{ color: '#FFD700', fontSize: '14px', margin: 0 }}> Rest Day Active</h3></div>}
       
       {state.settings.dashboardPunishment && (
         <div className="card" style={{ borderColor: '#f44336', background: 'rgba(244,67,54,0.1)' }}>
@@ -37,29 +36,28 @@ const Dashboard = ({ state, actions }) => {
         </div>
       )}
       
-      <SaintVisuals progress={displayProgress} inventory={state.user.inventory} />
+      <SaintVisuals progress={state.user.level} inventory={state.user.inventory} />
       
       <div className="card">
         <h3 style={{fontSize: '16px'}}>Liberation Meter</h3>
-        <p>Level: <span className="gold-text">{levelInfo.name}</span></p>
+        <p>Level: <span className="gold-text">Level {state.user.level}</span></p>
         <p>Shop XP: <span className="gold-text">{state.user.xp}</span></p>
         
-        {/* FIXED: Clearer Label */}
-        <p style={{marginBottom: '4px'}}>Discipline Score: <span className="gold-text" style={{fontSize: '18px'}}>{Math.round(displayProgress)}%</span></p>
+        {/* LIFETIME DISCIPLINE */}
+        <p style={{marginBottom: '4px'}}>Lifetime Discipline: <span className="gold-text" style={{fontSize: '18px'}}>{Math.round(state.user.lifetimeDiscipline)}%</span></p>
+        <p style={{fontSize: '11px', color: '#888', marginTop: '-8px', marginBottom: '12px'}}>Your historical average since day 1</p>
         
         <div className="mood-container">
           {moods.map((mood, i) => <span key={i} className={`mood-item ${i === currentMood ? 'active' : ''}`}>{mood}</span>)}
         </div>
         <p style={{textAlign: 'center', fontSize: '12px', color: '#888', marginTop: '8px'}}>Today: {completionPct}% ({todayLog.completed.length}/{dueHabits.length})</p>
         
-        {/* FIXED: Progress Bar Label */}
-        {displayProgress < 95 && (
-          <ProgressBar 
-            current={displayProgress} 
-            max={nextLevel.minProgress} 
-            label={`Next Level: ${nextLevel.name} (Requires ${nextLevel.minProgress}% Discipline)`} 
-          />
-        )}
+        {/* LEVEL PROGRESS BAR */}
+        <ProgressBar 
+          current={displayLevelPoints} 
+          max={nextLevelThreshold} 
+          label={`Level Progress (${Math.round(displayLevelPoints)} / ${nextLevelThreshold} pts)`} 
+        />
       </div>
 
       <div className="card">
