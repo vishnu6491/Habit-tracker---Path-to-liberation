@@ -43,15 +43,14 @@ const getDefaultState = () => ({
   logs: {},
   user: {
     xp: 0,
-    progress: 0, // Permanent progress
-    pendingDailyGain: 0, // Temporary progress for today
-    lastProgressDate: null, // To track day rollover
+    lifetimeDiscipline: 0, // The historical average (0-100%)
+    levelPoints: 0, // Banked points from previous days
+    pendingLevelPoints: 0, // Points earned today (not yet banked)
+    lastProgressDate: null,
     totalCompleted: 0,
     level: 1,
     inventory: [],
     achievements: [],
-    trialCompleted: false,
-    isLiberated: false,
     templeRecords: { startDate: new Date().toISOString().split('T')[0], milestones: {} }
   },
   settings: {
