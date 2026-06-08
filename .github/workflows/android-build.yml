@@ -8,6 +8,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      GRADLE_USER_HOME: /home/runner/.gradle
+      JAVA_OPTS: "-XX:MaxMetaspaceSize=512m -Xmx2g"
+      ORG_GRADLE_PROJECT_org.gradle.daemon: "false"
+      ORG_GRADLE_PROJECT_org.gradle.parallel: "false"
+      ORG_GRADLE_PROJECT_org.gradle.workers.max: "1"
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -29,39 +35,32 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Increase file descriptor limit
-        run: |
-          sudo sysctl -w fs.file-max=65536
-          ulimit -n 65536
-
       - name: Sync Capacitor
-        run: |
-          npx cap sync android
-          cd android
-          chmod +x gradlew
-
-      - name: Clean Gradle Cache
-        run: |
-          cd android
-          ./gradlew clean || true
-          ./gradlew --stop || true
+        run: npx cap sync android
 
       - name: Build APK
         run: |
           cd android
-          export GRADLE_USER_HOME=/home/runner/.gradle
-          export JAVA_OPTS="-XX:MaxMetaspaceSize=512m -Xmx2g"
-          ./gradlew assembleDebug --no-daemon --no-parallel --max-workers=1
+          chmod +x gradlew
+          
+          # Create gradle.properties to limit resources
+          echo "org.gradle.daemon=false" >> gradle.properties
+          echo "org.gradle.parallel=false" >> gradle.properties
+          echo "org.gradle.workers.max=1" >> gradle.properties
+          echo "org.gradle.jvmargs=-Xmx2g -XX:MaxMetaspaceSize=512m" >> gradle.properties
+          
+          # Build with minimal resource usage
+          ./gradlew assembleDebug \
+            --no-daemon \
+            --no-parallel \
+            --max-workers=1 \
+            -Dorg.gradle.daemon=false \
+            -Dorg.gradle.parallel=false \
+            -Dorg.gradle.workers.max=1
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          
-      - name: Upload APK (Release)
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release-unsigned
-          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+          retention-days: 7
