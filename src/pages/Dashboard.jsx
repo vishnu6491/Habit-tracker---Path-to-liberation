@@ -27,24 +27,6 @@ const Dashboard = ({ state, actions }) => {
       <h2 className="gold-text" style={{ textAlign: 'center', marginBottom: '12px', fontSize: '20px' }}>Habit Quest</h2>
       {state.settings.restDayActive && <div className="card" style={{ borderColor: '#FFD700', background: 'rgba(255,215,0,0.1)' }}><h3 style={{ color: '#FFD700', fontSize: '14px', margin: 0 }}> Rest Day Active</h3></div>}
       
-      {state.settings.dashboardPunishment && (
-        <div className="card" style={{ borderColor: '#f44336', background: 'rgba(244,67,54,0.1)' }}>
-          <h3 style={{ color: '#f44336', fontSize: '16px' }}>⚠️ Daily Punishment</h3>
-          <p style={{ fontSize: '13px', marginBottom: '8px' }}>You missed too many habits today</p>
-          <h4 className="gold-text" style={{ margin: '8px 0' }}>{state.settings.dashboardPunishment}</h4>
-          <button className="btn" onClick={actions.clearPunishment}>Mark as Completed</button>
-        </div>
-      )}
-      {/* PUNISHMENT BLOCK */}
-      {state.settings.dashboardPunishment && (
-        <div className="card" style={{ borderColor: '#f44336', background: 'rgba(244,67,54,0.1)' }}>
-          <h3 style={{ color: '#f44336', fontSize: '16px' }}>⚠️ Daily Punishment</h3>
-          <p style={{ fontSize: '13px', marginBottom: '8px' }}>You missed too many habits today</p>
-          <h4 className="gold-text" style={{ margin: '8px 0' }}>{state.settings.dashboardPunishment}</h4>
-          <button className="btn" onClick={actions.clearPunishment}>Mark as Completed</button>
-        </div>
-      )}
-      
       <SaintVisuals level={state.user.level} inventory={state.user.inventory} />
       
       <div className="card">
@@ -95,6 +77,16 @@ const Dashboard = ({ state, actions }) => {
           );
         })}
       </div>
+      
+      {/* PUNISHMENT BLOCK */}
+      {state.settings.dashboardPunishment && (
+        <div className="card" style={{ borderColor: '#f44336', background: 'rgba(244,67,54,0.1)' }}>
+          <h3 style={{ color: '#f44336', fontSize: '16px' }}>⚠️ Daily Punishment</h3>
+          <p style={{ fontSize: '13px', marginBottom: '8px' }}>You missed too many habits today</p>
+          <h4 className="gold-text" style={{ margin: '8px 0' }}>{state.settings.dashboardPunishment}</h4>
+          <button className="btn" onClick={actions.clearPunishment}>Mark as Completed</button>
+        </div>
+      )}
     </div>
   );
 };
