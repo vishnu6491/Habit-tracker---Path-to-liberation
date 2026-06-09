@@ -14,16 +14,21 @@ const SaintVisuals = ({ level, inventory }) => {
     <div className="saint-scene">
       <div className="scene-bg-fallback" />
       <img src={levelInfo.environment} alt="" className="scene-env" onError={e => e.target.style.display = 'none'} />
+      
+      {/* Equipment that goes BEHIND avatar */}
+      {equipped.wings && <img src={equipped.wings.image} className="equip equip-wings" alt="" onError={e => e.target.style.display = 'none'} />}
+      {equipped.throne && <img src={equipped.throne.image} className="equip equip-throne" alt="" onError={e => e.target.style.display = 'none'} />}
+      {equipped.mat && <img src={equipped.mat.image} className="equip equip-mat" alt="" onError={e => e.target.style.display = 'none'} />}
+      
+      {/* Main Avatar */}
       <img src={levelInfo.avatar} alt="" className="scene-avatar" onError={e => e.target.style.display = 'none'} />
       
-      {equipped.wings && <img src={equipped.wings.image} className="equip equip-wings" alt="" />}
-      {equipped.halo && <img src={equipped.halo.image} className="equip equip-halo" alt="" />}
-      {equipped.staff && <img src={equipped.staff.image} className="equip equip-staff" alt="" />}
-      {equipped.beads && <img src={equipped.beads.image} className="equip equip-beads" alt="" />}
-      {equipped.robe && <img src={equipped.robe.image} className="equip equip-robe" alt="" />}
-      {equipped.ring && <img src={equipped.ring.image} className="equip equip-ring" alt="" />}
-      {equipped.throne && <img src={equipped.throne.image} className="equip equip-throne" alt="" />}
-      {equipped.mat && <img src={equipped.mat.image} className="equip equip-mat" alt="" />}
+      {/* Equipment that goes IN FRONT of avatar */}
+      {equipped.robe && <img src={equipped.robe.image} className="equip equip-robe" alt="" onError={e => e.target.style.display = 'none'} />}
+      {equipped.beads && <img src={equipped.beads.image} className="equip equip-beads" alt="" onError={e => e.target.style.display = 'none'} />}
+      {equipped.staff && <img src={equipped.staff.image} className="equip equip-staff" alt="" onError={e => e.target.style.display = 'none'} />}
+      {equipped.halo && <img src={equipped.halo.image} className="equip equip-halo" alt="" onError={e => e.target.style.display = 'none'} />}
+      {equipped.ring && <img src={equipped.ring.image} className="equip equip-ring" alt="" onError={e => e.target.style.display = 'none'} />}
       
       <div className="scene-label">{levelInfo.name}</div>
     </div>
