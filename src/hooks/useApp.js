@@ -342,6 +342,14 @@ export const useApp = () => {
         [dateStr]: { completed, missed }
       };
       
+      const updateLogsForDate = (dateStr, completed, missed) => {
+    setState(prev => {
+      const newLogs = {
+        ...prev.logs,
+        [dateStr]: { completed, missed }
+      };
+      
+      // Recalculate everything from scratch
       const recalculated = recalculateState({ ...prev, logs: newLogs });
       
       return {
@@ -353,7 +361,8 @@ export const useApp = () => {
           xp: recalculated.totalXP,
           totalCompleted: recalculated.totalCompleted,
           lifetimeDiscipline: recalculated.lifetimeDiscipline,
-          pendingLevelPoints: recalculated.pendingLevelPoints,
+          levelPoints: prev.user.levelPoints, // Keep banked points
+          pendingLevelPoints: recalculated.pendingLevelPoints, // Update today's pending
           level: recalculated.newLevel,
           inventory: recalculated.newInventory
         },
