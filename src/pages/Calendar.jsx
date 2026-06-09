@@ -70,15 +70,19 @@ const CalendarPage = ({ state, actions }) => {
     
     let newCompleted, newMissed;
     
+    // Cycle through: unmarked → completed → missed → unmarked
     if (isCompleted) {
+      // Was completed, now mark as missed
       newCompleted = log.completed.filter(id => id !== habitId);
-      newMissed = log.missed;
+      newMissed = [...log.missed, habitId];
     } else if (isMissed) {
-      newCompleted = [...log.completed, habitId];
+      // Was missed, now unmark
+      newCompleted = log.completed.filter(id => id !== habitId);
       newMissed = log.missed.filter(id => id !== habitId);
     } else {
+      // Was unmarked, now mark as completed
       newCompleted = [...log.completed, habitId];
-      newMissed = log.missed;
+      newMissed = log.missed.filter(id => id !== habitId);
     }
     
     actions.updateLogsForDate(dateStr, newCompleted, newMissed);
