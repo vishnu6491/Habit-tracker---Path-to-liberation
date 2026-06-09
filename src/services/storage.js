@@ -43,9 +43,11 @@ const getDefaultState = () => ({
   logs: {},
   user: {
     xp: 0,
-    lifetimeDiscipline: 0, // The historical average (0-100%)
-    levelPoints: 0, // Banked points from previous days
-    pendingLevelPoints: 0, // Points earned today (not yet banked)
+    lifetimeDiscipline: 0,
+    levelPoints: 0,
+    pendingLevelPoints: 0,
+    pointsForCurrentLevel: 0,
+    pointsNeededForNextLevel: 100,
     lastProgressDate: null,
     totalCompleted: 0,
     level: 1,
