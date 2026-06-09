@@ -32,22 +32,20 @@ const CalendarPage = ({ state, actions }) => {
   }, [selectedDate, state.logs]);
 
   // Check if habit was missed on 2 consecutive days before the given date
+  // Check if habit was missed yesterday (show warning today)
   const checkConsecutiveMissesForDate = (habitId, logs, targetDate) => {
     const yesterday = new Date(targetDate);
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
     
-    const dayBefore = new Date(targetDate);
-    dayBefore.setDate(dayBefore.getDate() - 2);
-    const dayBeforeStr = dayBefore.toISOString().split('T')[0];
-    
     const missedYesterday = logs[yesterdayStr] && logs[yesterdayStr].missed.includes(habitId);
-    const missedDayBefore = logs[dayBeforeStr] && logs[dayBeforeStr].missed.includes(habitId);
     
-    if (missedYesterday && missedDayBefore) {
-      let count = 2;
-      let checkDate = new Date(dayBefore);
-      while (true) {        checkDate.setDate(checkDate.getDate() - 1);
+    if (missedYesterday) {
+      // Count how many consecutive days including yesterday
+      let count = 1;
+      let checkDate = new Date(yesterday);
+      while (true) {
+        checkDate.setDate(checkDate.getDate() - 1);
         const checkStr = checkDate.toISOString().split('T')[0];
         if (logs[checkStr] && logs[checkStr].missed.includes(habitId)) count++;
         else break;
