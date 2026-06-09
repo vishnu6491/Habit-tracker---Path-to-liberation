@@ -204,17 +204,6 @@ const CalendarPage = ({ state, actions }) => {
               </button>            )}
           </div>
           
-          {/* FIXED: Show punishment warning in calendar */}
-          {selectedDate.consecutiveMisses > 0 && (
-            <div style={{ background: 'rgba(244,67,54,0.2)', padding: '12px', borderRadius: '8px', marginBottom: '12px', border: '2px solid #f44336' }}>
-              <p style={{ color: '#f44336', fontSize: '14px', margin: 0, fontWeight: 'bold' }}>
-                ⚠️ Punishment Active
-              </p>
-              <p style={{ color: '#f44336', fontSize: '13px', margin: '4px 0 0 0' }}>
-                You missed {selectedDate.consecutiveMisses} consecutive day(s)
-              </p>
-            </div>
-          )}
           
           {selectedDate.due === 0 ? (
             <p style={{ textAlign: 'center', color: '#888', padding: '20px' }}>No habits were due on this day</p>
@@ -269,6 +258,21 @@ const CalendarPage = ({ state, actions }) => {
             </div>
           )}
         </div>
+
+/* PUNISHMENT - Moved to bottom */
+{selectedDate.consecutiveMisses > 0 && state.settings.dashboardPunishment && (
+  <div style={{ background: 'rgba(244,67,54,0.2)', padding: '12px', borderRadius: '8px', border: '2px solid #f44336', marginTop: '16px' }}>
+    <p style={{ color: '#f44336', fontSize: '14px', margin: '0 0 8px 0', fontWeight: 'bold' }}>
+      ⚠️ Consecutive Miss Punishment
+    </p>
+    <p style={{ color: '#f44336', fontSize: '13px', margin: '0 0 8px 0' }}>
+      You missed {selectedDate.consecutiveMisses} consecutive day(s)
+    </p>
+    <h4 className="gold-text" style={{ margin: '8px 0', fontSize: '16px' }}>
+      {state.settings.dashboardPunishment}
+    </h4>
+  </div>
+)}
       )}
     </div>
   );
