@@ -19,19 +19,43 @@ const CalendarPage = ({ state, actions }) => {
   const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
-  // Calculate 3 days ago string
   const todayStr = getToday();
   const threeDaysAgo = new Date();
   threeDaysAgo.setDate(new Date().getDate() - 2);
   const threeDaysAgoStr = threeDaysAgo.toISOString().split('T')[0];
 
-  // Update local log when selected date or state changes
   useEffect(() => {
     if (selectedDate) {
       const log = state.logs[selectedDate.dateStr] || { completed: [], missed: [] };
       setLocalLog(log);
     }
   }, [selectedDate, state.logs]);
+
+  // Check if habit was missed on 2 consecutive days before the given date
+  const checkConsecutiveMissesForDate = (habitId, logs, targetDate) => {
+    const yesterday = new Date(targetDate);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    
+    const dayBefore = new Date(targetDate);
+    dayBefore.setDate(dayBefore.getDate() - 2);
+    const dayBeforeStr = dayBefore.toISOString().split('T')[0];
+    
+    const missedYesterday = logs[yesterdayStr] && logs[yesterdayStr].missed.includes(habitId);
+    const missedDayBefore = logs[dayBeforeStr] && logs[dayBeforeStr].missed.includes(habitId);
+    
+    if (missedYesterday && missedDayBefore) {
+      let count = 2;
+      let checkDate = new Date(dayBefore);
+      while (true) {        checkDate.setDate(checkDate.getDate() - 1);
+        const checkStr = checkDate.toISOString().split('T')[0];
+        if (logs[checkStr] && logs[checkStr].missed.includes(habitId)) count++;
+        else break;
+      }
+      return count;
+    }
+    return 0;
+  };
 
   const getDayStats = (day, useLocalLog = false) => {
     if (!day) return null;
@@ -47,26 +71,15 @@ const CalendarPage = ({ state, actions }) => {
     const missedCount = log.missed.filter(id => dueHabits.some(h => h.id === id)).length;
     const pct = Math.round((completedCount / dueCount) * 100);
     
-    let status = 'red';    if (pct >= 80) status = 'green';
+    let status = 'red';
+    if (pct >= 80) status = 'green';
     else if (pct >= 50) status = 'yellow';
     
-    // Check for consecutive misses
-    // Check for consecutive misses (Trigger on the 3rd day)
+    // Check for consecutive misses (show warning on 3rd day)
     let consecutiveMisses = 0;
     dueHabits.forEach(habit => {
-      const yesterday = new Date(date);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
-      
-      const dayBefore = new Date(date);
-      dayBefore.setDate(dayBefore.getDate() - 2);
-      const dayBeforeStr = dayBefore.toISOString().split('T')[0];
-
-      const missedYesterday = state.logs[yesterdayStr] && state.logs[yesterdayStr].missed.includes(habit.id);
-      const missedDayBefore = state.logs[dayBeforeStr] && state.logs[dayBeforeStr].missed.includes(habit.id);
-      
-      // If yesterday and day-before were both missed, show warning on THIS day
-      if (missedYesterday && missedDayBefore) {
+      const count = checkConsecutiveMissesForDate(habit.id, state.logs, date);
+      if (count >= 2) {
         consecutiveMisses++;
       }
     });
@@ -83,7 +96,6 @@ const CalendarPage = ({ state, actions }) => {
     setEditMode(false);
     setLocalLog(log);
   };
-
   const handleEditClick = () => {
     if (!selectedDate) return;
     if (selectedDate.dateStr < threeDaysAgoStr) {
@@ -101,30 +113,25 @@ const CalendarPage = ({ state, actions }) => {
     if (!selectedDate) return;
     
     const currentLog = localLog || { completed: [], missed: [] };
-    const isCompleted = currentLog.completed.includes(habitId);    const isMissed = currentLog.missed.includes(habitId);
+    const isCompleted = currentLog.completed.includes(habitId);
+    const isMissed = currentLog.missed.includes(habitId);
     
     let newCompleted, newMissed;
     
-    // Cycle: unmarked → completed → missed → unmarked
     if (isCompleted) {
-      // Was completed, now mark as missed
       newCompleted = currentLog.completed.filter(id => id !== habitId);
       newMissed = [...currentLog.missed, habitId];
     } else if (isMissed) {
-      // Was missed, now unmark
       newCompleted = currentLog.completed.filter(id => id !== habitId);
       newMissed = currentLog.missed.filter(id => id !== habitId);
     } else {
-      // Was unmarked, now mark as completed
       newCompleted = [...currentLog.completed, habitId];
       newMissed = currentLog.missed.filter(id => id !== habitId);
     }
     
-    // Update local state immediately
     const newLog = { completed: newCompleted, missed: newMissed };
     setLocalLog(newLog);
     
-    // Update stats
     const updatedStats = getDayStats(parseInt(selectedDate.dateStr.split('-')[2]), true);
     setSelectedDate({
       ...updatedStats,
@@ -134,13 +141,11 @@ const CalendarPage = ({ state, actions }) => {
       pct: updatedStats.due > 0 ? Math.round((newCompleted.length / updatedStats.due) * 100) : 100
     });
     
-    // Save to global state
     actions.updateLogsForDate(selectedDate.dateStr, newCompleted, newMissed);
   };
 
   return (
-    <div>
-      <h2 className="gold-text">Calendar</h2>
+    <div>      <h2 className="gold-text">Calendar</h2>
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <button className="btn btn-outline" style={{ width: 'auto' }} onClick={prevMonth}>←</button>
@@ -150,11 +155,11 @@ const CalendarPage = ({ state, actions }) => {
         <div className="calendar-grid">
           {['S','M','T','W','T','F','S'].map(d => <div key={d} style={{ textAlign: 'center', fontSize: '12px', color: '#888' }}>{d}</div>)}
           {days.map((day, i) => {
-            if (!day) return <div key={i}></div>;            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            if (!day) return <div key={i}></div>;
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const stats = getDayStats(day);
             const isToday = dateStr === todayStr;
             const isFuture = dateStr > todayStr;
-            const isEditable = dateStr >= threeDaysAgoStr && !isFuture;
             
             return (
               <div 
@@ -189,17 +194,23 @@ const CalendarPage = ({ state, actions }) => {
             {!editMode && selectedDate.due > 0 && selectedDate.dateStr >= threeDaysAgoStr && selectedDate.dateStr <= todayStr && (
               <button className="btn btn-outline" style={{ width: 'auto', fontSize: '12px' }} onClick={handleEditClick}>
                 ✏️ Edit
-              </button>
-            )}
+              </button>            )}
           </div>
           
+          {/* FIXED: Show punishment warning in calendar */}
           {selectedDate.consecutiveMisses > 0 && (
-            <div style={{ background: 'rgba(244,67,54,0.2)', padding: '12px', borderRadius: '8px', marginBottom: '12px', border: '1px solid #f44336' }}>
-              <p style={{ color: '#f44336', fontSize: '13px', margin: 0 }}>⚠️ {selectedDate.consecutiveMisses} habit(s) missed consecutively</p>
+            <div style={{ background: 'rgba(244,67,54,0.2)', padding: '12px', borderRadius: '8px', marginBottom: '12px', border: '2px solid #f44336' }}>
+              <p style={{ color: '#f44336', fontSize: '14px', margin: 0, fontWeight: 'bold' }}>
+                ⚠️ Punishment Active
+              </p>
+              <p style={{ color: '#f44336', fontSize: '13px', margin: '4px 0 0 0' }}>
+                You missed {selectedDate.consecutiveMisses} consecutive day(s)
+              </p>
             </div>
           )}
           
-          {selectedDate.due === 0 ? (            <p style={{ textAlign: 'center', color: '#888', padding: '20px' }}>No habits were due on this day</p>
+          {selectedDate.due === 0 ? (
+            <p style={{ textAlign: 'center', color: '#888', padding: '20px' }}>No habits were due on this day</p>
           ) : !editMode ? (
             <>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
@@ -232,8 +243,7 @@ const CalendarPage = ({ state, actions }) => {
                 const isMissed = localLog?.missed.includes(habit.id);
                 
                 return (
-                  <div 
-                    key={habit.id}
+                  <div                     key={habit.id}
                     className={`habit-item ${isCompleted ? 'completed' : isMissed ? 'missed' : ''}`}
                     onClick={() => handleToggleHabit(habit.id)}
                     style={{ cursor: 'pointer' }}
@@ -248,7 +258,8 @@ const CalendarPage = ({ state, actions }) => {
                   </div>
                 );
               })}
-              <button className="btn" style={{ marginTop: '16px' }} onClick={() => setEditMode(false)}>Done Editing</button>            </div>
+              <button className="btn" style={{ marginTop: '16px' }} onClick={() => setEditMode(false)}>Done Editing</button>
+            </div>
           )}
         </div>
       )}
