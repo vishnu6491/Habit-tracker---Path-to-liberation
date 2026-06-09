@@ -62,31 +62,28 @@ export const useApp = () => {
 
   const getPunishmentThreshold = (level) => Math.min(80, 50 + ((level - 1) * 5)); // 50% to 80%
 
-  const checkConsecutiveMisses = (habitId, logs) => {
-    const today = getToday();
-    
+  const checkConsecutiveMisses = (habitId, logs, checkDate = new Date()) => {
     // Check Yesterday
-    const yesterday = new Date(); 
+    const yesterday = new Date(checkDate); 
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
     const yesterdayLog = logs[yesterdayStr];
     const missedYesterday = yesterdayLog && yesterdayLog.missed.includes(habitId);
     
     // Check Day Before Yesterday
-    const dayBeforeYesterday = new Date(); 
+    const dayBeforeYesterday = new Date(checkDate); 
     dayBeforeYesterday.setDate(dayBeforeYesterday.getDate() - 2);
     const dayBeforeStr = dayBeforeYesterday.toISOString().split('T')[0];
     const dayBeforeLog = logs[dayBeforeStr];
     const missedDayBefore = dayBeforeLog && dayBeforeLog.missed.includes(habitId);
     
-    // If BOTH previous days were missed, trigger punishment today
+    // If BOTH previous days were missed, trigger warning today (3rd day)
     if (missedYesterday && missedDayBefore) {
       let count = 2;
-      let checkDate = new Date(dayBeforeYesterday);
-      // Count how far back the streak actually goes
+      let checkDateIter = new Date(dayBeforeYesterday);
       while (true) {
-        checkDate.setDate(checkDate.getDate() - 1);
-        const checkStr = checkDate.toISOString().split('T')[0];
+        checkDateIter.setDate(checkDateIter.getDate() - 1);
+        const checkStr = checkDateIter.toISOString().split('T')[0];
         if (logs[checkStr] && logs[checkStr].missed.includes(habitId)) count++;
         else break;
       }
@@ -181,7 +178,7 @@ export const useApp = () => {
     // 4. Consecutive Misses Logic (Calendar)
     const consecutiveMissMap = {};
     dueHabitsToday.forEach(habit => {
-      const count = checkConsecutiveMisses(habit.id, prev.logs);
+      const count = checkConsecutiveMisses(habit.id, prev.logs, new Date());
       if (count >= 2) consecutiveMissMap[habit.id] = count;
     });
 
