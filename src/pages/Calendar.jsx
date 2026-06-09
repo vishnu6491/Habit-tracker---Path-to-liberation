@@ -223,19 +223,26 @@ const CalendarPage = ({ state, actions }) => {
               </div>
               
               {/* PUNISHMENT - At bottom */}
-              {selectedDate.consecutiveMisses > 0 && state.settings.dashboardPunishment && (
-                <div style={{ background: 'rgba(244,67,54,0.2)', padding: '12px', borderRadius: '8px', border: '2px solid #f44336', marginTop: '16px' }}>
-                  <p style={{ color: '#f44336', fontSize: '14px', margin: '0 0 8px 0', fontWeight: 'bold' }}>
-                    ⚠️ Consecutive Miss Punishment
-                  </p>
-                  <p style={{ color: '#f44336', fontSize: '13px', margin: '0 0 8px 0' }}>
-                    You missed {selectedDate.consecutiveMisses} consecutive day(s)
-                  </p>
-                  <h4 className="gold-text" style={{ margin: '8px 0', fontSize: '16px' }}>
-                    {state.settings.dashboardPunishment}
-                  </h4>
-                </div>
-              )}
+{selectedDate.consecutiveMisses > 0 && state.settings.consecutiveMissPunishment && (
+  <div style={{ background: 'rgba(244,67,54,0.2)', padding: '12px', borderRadius: '8px', border: '2px solid #f44336', marginTop: '16px' }}>
+    <p style={{ color: '#f44336', fontSize: '14px', margin: '0 0 8px 0', fontWeight: 'bold' }}>
+      ⚠️ Consecutive Miss Punishment
+    </p>
+    <p style={{ color: '#f44336', fontSize: '13px', margin: '0 0 8px 0' }}>
+      You missed {selectedDate.consecutiveMisses} consecutive day(s)
+    </p>
+    <h4 className="gold-text" style={{ margin: '8px 0', fontSize: '16px' }}>
+      {state.settings.consecutiveMissPunishment}
+    </h4>
+    <button 
+      className="btn" 
+      style={{ marginTop: '12px' }}
+      onClick={() => actions.clearPunishment('consecutive')}
+    >
+      Mark as Completed
+    </button>
+  </div>
+)}
             </>
           ) : (
             <div>
