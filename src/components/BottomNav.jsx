@@ -5,7 +5,7 @@ const BottomNav = ({ hasWarning }) => {
   const links = [
     { to: '/', icon: '🏠', label: 'Dashboard' },
     { to: '/habits', icon: '📜', label: 'Habits' },
-    { to: '/calendar', icon: '', label: 'Calendar' },
+    { to: '/calendar', icon: '📅', label: 'Calendar' },
     { to: '/shop', icon: '🛒', label: 'Shop' },
     { to: '/reports', icon: '📊', label: 'Reports' },
     { to: '/settings', icon: '⚙️', label: 'Settings' }
