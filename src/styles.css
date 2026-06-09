@@ -740,3 +740,77 @@ body {
   text-transform: uppercase;
   letter-spacing: 1px;
 }
+/* Saint Scene & Equipment Overlay System */
+.saint-scene {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  border: 2px solid var(--theme-primary);
+  background: #000;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+}
+
+.scene-bg-fallback {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(180deg, #1a0b2e 0%, #2d1b4e 50%, #0f0518 100%);
+  z-index: 0;
+}
+
+.scene-env {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: 1;
+  opacity: 0.85;
+}
+
+.scene-avatar {
+  position: absolute;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 300px;
+  z-index: 5;
+  filter: drop-shadow(0 0 15px rgba(255,215,0,0.3));
+}
+
+.equip {
+  position: absolute;
+  pointer-events: none;
+  image-rendering: auto;
+}
+
+/* Z-Index Layering: Behind Avatar (2-4) */
+.equip-wings { top: 5%; left: 50%; transform: translateX(-50%); width: 320px; height: 220px; z-index: 2; }
+.equip-throne { bottom: 30px; left: 50%; transform: translateX(-50%); width: 280px; height: 160px; z-index: 3; }
+.equip-mat { bottom: 10px; left: 50%; transform: translateX(-50%); width: 300px; height: 90px; z-index: 3; }
+
+/* Z-Index Layering: In Front of Avatar (6-10) */
+.equip-robe { bottom: 70px; left: 50%; transform: translateX(-50%); height: 300px; z-index: 6; }
+.equip-beads { top: 42%; left: 50%; transform: translateX(-50%); width: 90px; z-index: 7; }
+.equip-staff { bottom: 70px; right: 18%; height: 280px; z-index: 7; }
+.equip-halo { top: 5%; left: 50%; transform: translateX(-50%); width: 120px; z-index: 8; }
+.equip-ring { top: 48%; left: 50%; transform: translate(-50%, -50%); width: 320px; height: 320px; z-index: 4; opacity: 0.6; }
+
+.scene-label {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: rgba(0,0,0,0.85);
+  padding: 10px 24px;
+  border-radius: 24px;
+  color: var(--theme-secondary);
+  font-weight: 800;
+  font-size: 18px;
+  border: 2px solid var(--theme-secondary);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  box-shadow: 0 0 15px rgba(255,215,0,0.4);
+    }
