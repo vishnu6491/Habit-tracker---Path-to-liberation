@@ -35,6 +35,15 @@ const Dashboard = ({ state, actions }) => {
           <button className="btn" onClick={actions.clearPunishment}>Mark as Completed</button>
         </div>
       )}
+      {/* PUNISHMENT BLOCK */}
+      {state.settings.dashboardPunishment && (
+        <div className="card" style={{ borderColor: '#f44336', background: 'rgba(244,67,54,0.1)' }}>
+          <h3 style={{ color: '#f44336', fontSize: '16px' }}>⚠️ Daily Punishment</h3>
+          <p style={{ fontSize: '13px', marginBottom: '8px' }}>You missed too many habits today</p>
+          <h4 className="gold-text" style={{ margin: '8px 0' }}>{state.settings.dashboardPunishment}</h4>
+          <button className="btn" onClick={actions.clearPunishment}>Mark as Completed</button>
+        </div>
+      )}
       
       <SaintVisuals level={state.user.level} inventory={state.user.inventory} />
       
