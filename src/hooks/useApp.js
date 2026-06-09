@@ -63,7 +63,6 @@ export const useApp = () => {
   const getPunishmentThreshold = (level) => Math.min(80, 50 + ((level - 1) * 5)); // 50% to 80%
 
   const checkConsecutiveMisses = (habitId, logs) => {
-  const checkConsecutiveMisses = (habitId, logs) => {
     const today = getToday();
     
     // Check Yesterday
