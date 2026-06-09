@@ -11,6 +11,10 @@ import Settings from './pages/Settings';
 
 function App() {
   const { state, actions } = useApp();
+
+  // Check if there are any active consecutive misses to show warning on Calendar tab
+  const hasWarning = Object.keys(state.settings.consecutiveMissMap || {}).length > 0;
+
   return (
     <Router>
       <div className="app-container">
@@ -24,10 +28,12 @@ function App() {
             <Route path="/settings" element={<Settings state={state} actions={actions} />} />
           </Routes>
         </main>
-    const hasActiveWarning = Object.keys(state.settings.consecutiveMissMap || {}).length > 0;
-    <BottomNav hasWarning={hasActiveWarning} />
+        
+        {/* Pass the warning status to the BottomNav */}
+        <BottomNav hasWarning={hasWarning} />
       </div>
     </Router>
   );
 }
+
 export default App;
