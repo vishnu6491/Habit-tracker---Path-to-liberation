@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getToday, isHabitDueOnDate } from '../utils/helpers';
 
 const CalendarPage = ({ state, actions }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [editMode, setEditMode] = useState(false);
+  const [localLog, setLocalLog] = useState(null);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -19,38 +20,46 @@ const CalendarPage = ({ state, actions }) => {
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
   // Calculate 3 days ago string
-  const today = new Date();
-  const threeDaysAgo = new Date();
-  threeDaysAgo.setDate(today.getDate() - 2);
-  const threeDaysAgoStr = threeDaysAgo.toISOString().split('T')[0];
   const todayStr = getToday();
+  const threeDaysAgo = new Date();
+  threeDaysAgo.setDate(new Date().getDate() - 2);
+  const threeDaysAgoStr = threeDaysAgo.toISOString().split('T')[0];
 
-  const getDayStats = (day) => {
+  // Update local log when selected date or state changes
+  useEffect(() => {
+    if (selectedDate) {
+      const log = state.logs[selectedDate.dateStr] || { completed: [], missed: [] };
+      setLocalLog(log);
+    }
+  }, [selectedDate, state.logs]);
+
+  const getDayStats = (day, useLocalLog = false) => {
     if (!day) return null;
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const log = state.logs[dateStr];
+    const log = useLocalLog && selectedDate && dateStr === selectedDate.dateStr ? localLog : (state.logs[dateStr] || { completed: [], missed: [] });
     const date = new Date(year, month, day);
     const dueHabits = state.habits.filter(h => h.active && isHabitDueOnDate(h, date));
     const dueCount = dueHabits.length;
     
-    if (dueCount === 0) return { dateStr, due: 0, completed: 0, missed: 0, pct: 100, status: 'neutral', consecutiveMisses: 0 };
+    if (dueCount === 0) return { dateStr, due: 0, completed: 0, missed: 0, pct: 100, status: 'neutral', consecutiveMisses: 0, dueHabits, log };
     
-    const completedCount = log ? log.completed.filter(id => dueHabits.some(h => h.id === id)).length : 0;
-    const missedCount = log ? log.missed.filter(id => dueHabits.some(h => h.id === id)).length : 0;
+    const completedCount = log.completed.filter(id => dueHabits.some(h => h.id === id)).length;
+    const missedCount = log.missed.filter(id => dueHabits.some(h => h.id === id)).length;
     const pct = Math.round((completedCount / dueCount) * 100);
     
-    let status = 'red';
-    if (pct >= 80) status = 'green';
+    let status = 'red';    if (pct >= 80) status = 'green';
     else if (pct >= 50) status = 'yellow';
     
     // Check for consecutive misses
     let consecutiveMisses = 0;
     dueHabits.forEach(habit => {
       const yesterday = new Date(date);
-      yesterday.setDate(yesterday.getDate() - 1);      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      const yesterdayLog = state.logs[yesterdayStr];
       
-      const missedToday = log && log.missed.includes(habit.id);
-      const missedYesterday = state.logs[yesterdayStr] && state.logs[yesterdayStr].missed.includes(habit.id);
+      const missedToday = log.missed.includes(habit.id);
+      const missedYesterday = yesterdayLog && yesterdayLog.missed.includes(habit.id);
       
       if (missedToday && missedYesterday) {
         consecutiveMisses++;
@@ -62,43 +71,66 @@ const CalendarPage = ({ state, actions }) => {
 
   const handleDateClick = (day) => {
     if (!day) return;
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const log = state.logs[dateStr] || { completed: [], missed: [] };
     const stats = getDayStats(day);
-    setSelectedDate(stats);
+    setSelectedDate({ ...stats, log });
     setEditMode(false);
+    setLocalLog(log);
   };
 
   const handleEditClick = () => {
+    if (!selectedDate) return;
     if (selectedDate.dateStr < threeDaysAgoStr) {
       alert('You can only edit habits for the last 3 days!');
+      return;
+    }
+    if (selectedDate.dateStr > todayStr) {
+      alert('You cannot edit future dates!');
       return;
     }
     setEditMode(true);
   };
 
-  const handleToggleHabit = (habitId, dateStr) => {
-    const log = state.logs[dateStr] || { completed: [], missed: [] };
-    const isCompleted = log.completed.includes(habitId);
-    const isMissed = log.missed.includes(habitId);
+  const handleToggleHabit = (habitId) => {
+    if (!selectedDate) return;
+    
+    const currentLog = localLog || { completed: [], missed: [] };
+    const isCompleted = currentLog.completed.includes(habitId);    const isMissed = currentLog.missed.includes(habitId);
     
     let newCompleted, newMissed;
     
+    // Cycle: unmarked → completed → missed → unmarked
     if (isCompleted) {
-      newCompleted = log.completed.filter(id => id !== habitId);
-      newMissed = [...log.missed, habitId];
+      // Was completed, now mark as missed
+      newCompleted = currentLog.completed.filter(id => id !== habitId);
+      newMissed = [...currentLog.missed, habitId];
     } else if (isMissed) {
-      newCompleted = log.completed.filter(id => id !== habitId);
-      newMissed = log.missed.filter(id => id !== habitId);
+      // Was missed, now unmark
+      newCompleted = currentLog.completed.filter(id => id !== habitId);
+      newMissed = currentLog.missed.filter(id => id !== habitId);
     } else {
-      newCompleted = [...log.completed, habitId];
-      newMissed = log.missed.filter(id => id !== habitId);
+      // Was unmarked, now mark as completed
+      newCompleted = [...currentLog.completed, habitId];
+      newMissed = currentLog.missed.filter(id => id !== habitId);
     }
     
-    actions.updateLogsForDate(dateStr, newCompleted, newMissed);
+    // Update local state immediately
+    const newLog = { completed: newCompleted, missed: newMissed };
+    setLocalLog(newLog);
     
-    const day = parseInt(dateStr.split('-')[2]);
-    setTimeout(() => {      const stats = getDayStats(day);
-      setSelectedDate(stats);
-    }, 100);
+    // Update stats
+    const updatedStats = getDayStats(parseInt(selectedDate.dateStr.split('-')[2]), true);
+    setSelectedDate({
+      ...updatedStats,
+      log: newLog,
+      completed: newCompleted.length,
+      missed: newMissed.length,
+      pct: updatedStats.due > 0 ? Math.round((newCompleted.length / updatedStats.due) * 100) : 100
+    });
+    
+    // Save to global state
+    actions.updateLogsForDate(selectedDate.dateStr, newCompleted, newMissed);
   };
 
   return (
@@ -113,16 +145,15 @@ const CalendarPage = ({ state, actions }) => {
         <div className="calendar-grid">
           {['S','M','T','W','T','F','S'].map(d => <div key={d} style={{ textAlign: 'center', fontSize: '12px', color: '#888' }}>{d}</div>)}
           {days.map((day, i) => {
-            if (!day) return <div key={i}></div>;
+            if (!day) return <div key={i}></div>;            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const stats = getDayStats(day);
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const isToday = dateStr === todayStr;
             const isFuture = dateStr > todayStr;
             const isEditable = dateStr >= threeDaysAgoStr && !isFuture;
             
             return (
               <div 
-                key={i} 
+                key={`${year}-${month}-${day}`}
                 className={`calendar-day ${stats ? stats.status : ''} ${isToday ? 'today' : ''}`}
                 onClick={() => !isFuture && handleDateClick(day)}
                 style={{ 
@@ -145,6 +176,7 @@ const CalendarPage = ({ state, actions }) => {
           })}
         </div>
       </div>
+
       {selectedDate && (
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -162,8 +194,7 @@ const CalendarPage = ({ state, actions }) => {
             </div>
           )}
           
-          {selectedDate.due === 0 ? (
-            <p style={{ textAlign: 'center', color: '#888', padding: '20px' }}>No habits were due on this day</p>
+          {selectedDate.due === 0 ? (            <p style={{ textAlign: 'center', color: '#888', padding: '20px' }}>No habits were due on this day</p>
           ) : !editMode ? (
             <>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
@@ -190,14 +221,16 @@ const CalendarPage = ({ state, actions }) => {
             </>
           ) : (
             <div>
-              <p style={{ fontSize: '13px', color: '#888', marginBottom: '12px' }}>Tap habits to toggle: ⚪ → ✅ → ❌ → ⚪</p>
-              {selectedDate.dueHabits.map(habit => {
-                const isCompleted = selectedDate.log?.completed.includes(habit.id);
-                const isMissed = selectedDate.log?.missed.includes(habit.id);
-                return (                  <div 
-                    key={habit.id} 
+              <p style={{ fontSize: '13px', color: '#888', marginBottom: '12px' }}>Tap habits to toggle: ⚪ → ✅ → ❌ → </p>
+              {selectedDate.dueHabits && selectedDate.dueHabits.map((habit) => {
+                const isCompleted = localLog?.completed.includes(habit.id);
+                const isMissed = localLog?.missed.includes(habit.id);
+                
+                return (
+                  <div 
+                    key={habit.id}
                     className={`habit-item ${isCompleted ? 'completed' : isMissed ? 'missed' : ''}`}
-                    onClick={() => handleToggleHabit(habit.id, selectedDate.dateStr)}
+                    onClick={() => handleToggleHabit(habit.id)}
                     style={{ cursor: 'pointer' }}
                   >
                     <div>
@@ -205,13 +238,12 @@ const CalendarPage = ({ state, actions }) => {
                       <div style={{ fontSize: '11px', color: '#888' }}>{habit.difficulty} • {habit.xp} XP</div>
                     </div>
                     <div style={{ fontSize: '20px' }}>
-                      {isCompleted ? '✅' : isMissed ? '' : '⚪'}
+                      {isCompleted ? '✅' : isMissed ? '❌' : '⚪'}
                     </div>
                   </div>
                 );
               })}
-              <button className="btn" style={{ marginTop: '16px' }} onClick={() => setEditMode(false)}>Done Editing</button>
-            </div>
+              <button className="btn" style={{ marginTop: '16px' }} onClick={() => setEditMode(false)}>Done Editing</button>            </div>
           )}
         </div>
       )}
