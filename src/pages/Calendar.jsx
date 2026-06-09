@@ -81,10 +81,8 @@ const CalendarPage = ({ state, actions }) => {
       newMissed = log.missed;
     }
     
-    // Update the log for that date
     actions.updateLogsForDate(dateStr, newCompleted, newMissed);
     
-    // FIX: Immediately update local state for instant visual feedback
     setSelectedDate(prev => ({
       ...prev,
       log: { completed: newCompleted, missed: newMissed },
@@ -93,32 +91,12 @@ const CalendarPage = ({ state, actions }) => {
       pct: prev.due > 0 ? Math.round((newCompleted.length / prev.due) * 100) : 100
     }));
   };
-    
-    // Update the log for that date
-    const newLogs = {
-      ...state.logs,
-      [dateStr]: {
-        completed: newCompleted,
-        missed: newMissed
-      }
-    };
-    
-    // Save to state
-    actions.updateLogsForDate(dateStr, newCompleted, newMissed);
-    
-    // Refresh selected date stats    const day = parseInt(dateStr.split('-')[2]);
-    setTimeout(() => {
-      const stats = getDayStats(day);
-      setSelectedDate(stats);
-    }, 100);
-  };
 
   const todayStr = getToday();
 
   return (
     <div>
-      <h2 className="gold-text">Calendar</h2>
-      <div className="card">
+      <h2 className="gold-text">Calendar</h2>      <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <button className="btn btn-outline" style={{ width: 'auto' }} onClick={prevMonth}>←</button>
           <h3>{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
@@ -155,7 +133,8 @@ const CalendarPage = ({ state, actions }) => {
       </div>
 
       {selectedDate && (
-        <div className="card">          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h3 className="gold-text">{selectedDate.dateStr}</h3>
             {!editMode && selectedDate.due > 0 && (
               <button className="btn btn-outline" style={{ width: 'auto', fontSize: '12px' }} onClick={handleEditClick}>
@@ -166,8 +145,7 @@ const CalendarPage = ({ state, actions }) => {
           
           {selectedDate.consecutiveMisses > 0 && (
             <div style={{ background: 'rgba(244,67,54,0.2)', padding: '12px', borderRadius: '8px', marginBottom: '12px', border: '1px solid #f44336' }}>
-              <p style={{ color: '#f44336', fontSize: '13px', margin: 0 }}>⚠️ {selectedDate.consecutiveMisses} habit(s) missed consecutively</p>
-            </div>
+              <p style={{ color: '#f44336', fontSize: '13px', margin: 0 }}>⚠️ {selectedDate.consecutiveMisses} habit(s) missed consecutively</p>            </div>
           )}
           
           {selectedDate.due === 0 ? (
@@ -204,7 +182,8 @@ const CalendarPage = ({ state, actions }) => {
                 const isCompleted = selectedDate.log?.completed.includes(habit.id);
                 const isMissed = selectedDate.log?.missed.includes(habit.id);
                 
-                return (                  <div 
+                return (
+                  <div 
                     key={habit.id} 
                     className={`habit-item ${isCompleted ? 'completed' : isMissed ? 'missed' : ''}`}
                     onClick={() => handleToggleHabit(habit.id, selectedDate.dateStr)}
@@ -215,8 +194,7 @@ const CalendarPage = ({ state, actions }) => {
                       <div style={{ fontSize: '11px', color: '#888' }}>{habit.difficulty} • {habit.xp} XP</div>
                     </div>
                     <div style={{ fontSize: '20px' }}>
-                      {isCompleted ? '✅' : isMissed ? '❌' : '⚪'}
-                    </div>
+                      {isCompleted ? '✅' : isMissed ? '❌' : '⚪'}                    </div>
                   </div>
                 );
               })}
