@@ -135,7 +135,7 @@ export const useApp = () => {
     }
   };
 
-  const recalculateState = (prev) => {
+const recalculateState = (prev) => {
     const today = getToday();
     const todayLog = prev.logs[today] || { completed: [], missed: [] };
     const dueHabits = prev.habits.filter(h => h.active && isHabitDueOnDate(h, new Date()));
@@ -145,7 +145,8 @@ export const useApp = () => {
     
     let dashboardPunishment = prev.settings.dashboardPunishment;
     if (completionPct < threshold) {
-      if (!dashboardPunishment) {        const pool = prev.settings.punishmentMode === 'custom' ? prev.settings.customPunishments : prev.settings.punishmentMode === 'both' ? [...BUILT_IN_PUNISHMENTS, ...prev.settings.customPunishments] : BUILT_IN_PUNISHMENTS;
+      if (!dashboardPunishment) {
+        const pool = prev.settings.punishmentMode === 'custom' ? prev.settings.customPunishments : prev.settings.punishmentMode === 'both' ? [...BUILT_IN_PUNISHMENTS, ...prev.settings.customPunishments] : BUILT_IN_PUNISHMENTS;
         dashboardPunishment = pool[Math.floor(Math.random() * pool.length)] || '20 Push-ups';
       }
     } else {
@@ -174,16 +175,24 @@ export const useApp = () => {
 
     const lifetimeDiscipline = calculateLifetimeDiscipline(prev.logs, prev.habits);
     const pendingLevelPoints = calculateDailyPoints(completionPct, prev.user.level);
-    const displayLevelPoints = prev.user.levelPoints + pendingLevelPoints;
-
+    
+    // Calculate total points from all days
+    let totalLevelPoints = prev.user.levelPoints || 0;
+    if (prev.user.lastProgressDate !== today) {
+      totalLevelPoints += pendingLevelPoints;
+    }
+    
     let newLevel = 1;
     for (let i = SAINT_LEVELS.length - 1; i >= 0; i--) {
-      if (displayLevelPoints >= (i * 100)) { 
+      if (totalLevelPoints >= (i * 100)) { 
         newLevel = i + 1;
         break;
       }
     }
     newLevel = Math.min(7, newLevel);
+    
+    const pointsForCurrentLevel = totalLevelPoints - ((newLevel - 1) * 100);
+    const pointsNeededForNextLevel = 100;
 
     let newInventory = [...prev.user.inventory];
     newInventory = newInventory.filter(itemId => {
@@ -194,18 +203,21 @@ export const useApp = () => {
     return {
       dashboardPunishment,
       consecutiveMissMap,
-      totalXP,      totalCompleted,
+      totalXP,
+      totalCompleted,
       recalculatedHabits,
       completionPct,
       lifetimeDiscipline,
       pendingLevelPoints,
-      displayLevelPoints,
+      totalLevelPoints,
+      pointsForCurrentLevel,
+      pointsNeededForNextLevel,
       newLevel,
       newInventory
     };
   };
 
-  const completeHabit = (habitId) => {
+const completeHabit = (habitId) => {
     const today = getToday();
     const habit = state.habits.find(h => h.id === habitId);
     if (!habit) return;
@@ -227,7 +239,9 @@ export const useApp = () => {
           xp: recalculated.totalXP,
           totalCompleted: recalculated.totalCompleted,
           lifetimeDiscipline: recalculated.lifetimeDiscipline,
-          pendingLevelPoints: recalculated.pendingLevelPoints,
+          levelPoints: recalculated.totalLevelPoints,
+          pointsForCurrentLevel: recalculated.pointsForCurrentLevel,
+          pointsNeededForNextLevel: recalculated.pointsNeededForNextLevel,
           level: recalculated.newLevel,
           inventory: recalculated.newInventory
         },
@@ -243,7 +257,8 @@ export const useApp = () => {
       const todayLog = prev.logs[today] || { completed: [], missed: [] };
       if (todayLog.missed.includes(habitId)) return prev;
 
-      const newTodayLog = { completed: todayLog.completed.filter(id => id !== habitId), missed: [...todayLog.missed, habitId] };      const newLogs = { ...prev.logs, [today]: newTodayLog };
+      const newTodayLog = { completed: todayLog.completed.filter(id => id !== habitId), missed: [...todayLog.missed, habitId] };
+      const newLogs = { ...prev.logs, [today]: newTodayLog };
       const recalculated = recalculateState({ ...prev, logs: newLogs });
 
       return {
@@ -255,7 +270,9 @@ export const useApp = () => {
           xp: recalculated.totalXP, 
           totalCompleted: recalculated.totalCompleted,
           lifetimeDiscipline: recalculated.lifetimeDiscipline,
-          pendingLevelPoints: recalculated.pendingLevelPoints,
+          levelPoints: recalculated.totalLevelPoints,
+          pointsForCurrentLevel: recalculated.pointsForCurrentLevel,
+          pointsNeededForNextLevel: recalculated.pointsNeededForNextLevel,
           level: recalculated.newLevel,
           inventory: recalculated.newInventory
         },
@@ -287,12 +304,15 @@ export const useApp = () => {
           xp: Math.max(0, recalculated.totalXP),
           totalCompleted: recalculated.totalCompleted,
           lifetimeDiscipline: recalculated.lifetimeDiscipline,
-          pendingLevelPoints: recalculated.pendingLevelPoints,
+          levelPoints: recalculated.totalLevelPoints,
+          pointsForCurrentLevel: recalculated.pointsForCurrentLevel,
+          pointsNeededForNextLevel: recalculated.pointsNeededForNextLevel,
           level: recalculated.newLevel,
           inventory: recalculated.newInventory
         },
         settings: { ...prev.settings, dashboardPunishment: recalculated.dashboardPunishment, consecutiveMissMap: recalculated.consecutiveMissMap }
-      };    });
+      };
+    });
   };
 
   const updateLogsForDate = (dateStr, completed, missed) => {
@@ -302,25 +322,41 @@ export const useApp = () => {
         [dateStr]: { completed, missed }
       };
       
-      // Recalculate everything from scratch with new logs
+      // Recalculate everything from scratch
       const recalculated = recalculateState({ ...prev, logs: newLogs });
       
-      // If editing a past date (not today), we need to recalculate levelPoints
-      const today = getToday();
-      let newLevelPoints = prev.user.levelPoints;
+      // Calculate points for the edited date specifically
+      const date = new Date(dateStr);
+      const dueHabitsOnDate = prev.habits.filter(h => h.active && isHabitDueOnDate(h, date));
+      const totalDue = dueHabitsOnDate.length;
+      const completionPct = totalDue > 0 ? (completed.length / totalDue) * 100 : 100;
+      const pointsForThisDay = calculateDailyPoints(completionPct, prev.user.level);
       
-      if (dateStr !== today) {
-        // For past dates, recalculate the points for that specific date
-        const date = new Date(dateStr);
-        const dueHabits = prev.habits.filter(h => h.active && isHabitDueOnDate(h, date));
-        const totalDue = dueHabits.length;
-        const completionPct = totalDue > 0 ? (completed.length / totalDue) * 100 : 100;
-        const pointsForThisDay = calculateDailyPoints(completionPct, prev.user.level);
-        
-        // We need to subtract the old points and add new points
-        // For simplicity, we'll just use the new points
-        newLevelPoints = prev.user.levelPoints + pointsForThisDay;
+      // Recalculate total level points from all logs
+      let totalLevelPoints = 0;
+      Object.keys(newLogs).forEach(logDate => {
+        const log = newLogs[logDate];
+        const logDateObj = new Date(logDate);
+        const dueOnDay = prev.habits.filter(h => h.active && isHabitDueOnDate(h, logDateObj));
+        const dueCount = dueOnDay.length;
+        const pct = dueCount > 0 ? (log.completed.length / dueCount) * 100 : 100;
+        const dayPoints = calculateDailyPoints(pct, prev.user.level);
+        totalLevelPoints += dayPoints;
+      });
+      
+      // Calculate level based on total points
+      let newLevel = 1;
+      for (let i = SAINT_LEVELS.length - 1; i >= 0; i--) {
+        if (totalLevelPoints >= (i * 100)) { 
+          newLevel = i + 1;
+          break;
+        }
       }
+      newLevel = Math.min(7, newLevel);
+      
+      // Progress within current level (not cumulative)
+      const pointsForCurrentLevel = totalLevelPoints - ((newLevel - 1) * 100);
+      const pointsNeededForNextLevel = 100;
       
       return {
         ...prev,
@@ -331,9 +367,11 @@ export const useApp = () => {
           xp: recalculated.totalXP,
           totalCompleted: recalculated.totalCompleted,
           lifetimeDiscipline: recalculated.lifetimeDiscipline,
-          levelPoints: newLevelPoints,
-          pendingLevelPoints: dateStr === today ? recalculated.pendingLevelPoints : prev.user.pendingLevelPoints,
-          level: recalculated.newLevel,
+          levelPoints: totalLevelPoints,
+          pendingLevelPoints: 0,
+          level: newLevel,
+          pointsForCurrentLevel: pointsForCurrentLevel,
+          pointsNeededForNextLevel: pointsNeededForNextLevel,
           inventory: recalculated.newInventory
         },
         settings: { 
