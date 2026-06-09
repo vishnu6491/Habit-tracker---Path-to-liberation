@@ -24,7 +24,8 @@ function App() {
             <Route path="/settings" element={<Settings state={state} actions={actions} />} />
           </Routes>
         </main>
-        <BottomNav />
+    const hasActiveWarning = Object.keys(state.settings.consecutiveMissMap || {}).length > 0;
+    <BottomNav hasWarning={hasActiveWarning} />
       </div>
     </Router>
   );
