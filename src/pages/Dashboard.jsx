@@ -36,7 +36,7 @@ const Dashboard = ({ state, actions }) => {
         </div>
       )}
       
-      <SaintVisuals progress={state.user.level} inventory={state.user.inventory} />
+      <SaintVisuals level={state.user.level} inventory={state.user.inventory} />
       
       <div className="card">
         <h3 style={{fontSize: '16px'}}>Liberation Meter</h3>
