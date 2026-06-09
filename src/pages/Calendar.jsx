@@ -71,18 +71,28 @@ const CalendarPage = ({ state, actions }) => {
     let newCompleted, newMissed;
     
     if (isCompleted) {
-      // Remove from completed
       newCompleted = log.completed.filter(id => id !== habitId);
       newMissed = log.missed;
     } else if (isMissed) {
-      // Move from missed to completed
       newCompleted = [...log.completed, habitId];
       newMissed = log.missed.filter(id => id !== habitId);
     } else {
-      // Add to completed
       newCompleted = [...log.completed, habitId];
       newMissed = log.missed;
     }
+    
+    // Update the log for that date
+    actions.updateLogsForDate(dateStr, newCompleted, newMissed);
+    
+    // FIX: Immediately update local state for instant visual feedback
+    setSelectedDate(prev => ({
+      ...prev,
+      log: { completed: newCompleted, missed: newMissed },
+      completed: newCompleted.length,
+      missed: newMissed.length,
+      pct: prev.due > 0 ? Math.round((newCompleted.length / prev.due) * 100) : 100
+    }));
+  };
     
     // Update the log for that date
     const newLogs = {
