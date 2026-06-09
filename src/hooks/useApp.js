@@ -322,15 +322,38 @@ const completeHabit = (habitId) => {
         [dateStr]: { completed, missed }
       };
       
-      // Recalculate everything from scratch
-      const recalculated = recalculateState({ ...prev, logs: newLogs });
+      // Recalculate consecutive misses for ALL habits across ALL dates
+      const newConsecutiveMissMap = {};
+      prev.habits.filter(h => h.active).forEach(habit => {
+        const dates = Object.keys(newLogs).sort();
+        let maxConsecutive = 0;
+        let currentConsecutive = 0;
+        
+        dates.forEach(date => {
+          const log = newLogs[date];
+          const dateObj = new Date(date);
+          const isDue = isHabitDueOnDate(habit, dateObj);
+          
+          if (isDue) {
+            if (log.missed.includes(habit.id)) {
+              currentConsecutive++;
+              maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
+            } else if (log.completed.includes(habit.id)) {
+              currentConsecutive = 0;
+            }
+          }
+        });
+        
+        if (maxConsecutive >= 2) {
+          newConsecutiveMissMap[habit.id] = maxConsecutive;
+        }
+      });
       
-      // Calculate points for the edited date specifically
+      // Calculate points for the edited date
       const date = new Date(dateStr);
       const dueHabitsOnDate = prev.habits.filter(h => h.active && isHabitDueOnDate(h, date));
       const totalDue = dueHabitsOnDate.length;
       const completionPct = totalDue > 0 ? (completed.length / totalDue) * 100 : 100;
-      const pointsForThisDay = calculateDailyPoints(completionPct, prev.user.level);
       
       // Recalculate total level points from all logs
       let totalLevelPoints = 0;
@@ -341,10 +364,9 @@ const completeHabit = (habitId) => {
         const dueCount = dueOnDay.length;
         const pct = dueCount > 0 ? (log.completed.length / dueCount) * 100 : 100;
         const dayPoints = calculateDailyPoints(pct, prev.user.level);
-        totalLevelPoints += dayPoints;
-      });
+        totalLevelPoints += dayPoints;      });
       
-      // Calculate level based on total points
+      // Calculate level
       let newLevel = 1;
       for (let i = SAINT_LEVELS.length - 1; i >= 0; i--) {
         if (totalLevelPoints >= (i * 100)) { 
@@ -354,30 +376,46 @@ const completeHabit = (habitId) => {
       }
       newLevel = Math.min(7, newLevel);
       
-      // Progress within current level (not cumulative)
       const pointsForCurrentLevel = totalLevelPoints - ((newLevel - 1) * 100);
-      const pointsNeededForNextLevel = 100;
+      
+      // Recalculate XP
+      let totalXP = 0;
+      let totalCompleted = 0;
+      Object.values(newLogs).forEach(log => {
+        log.completed.forEach(habitId => {
+          const habit = prev.habits.find(h => h.id === habitId);
+          if (habit) { totalXP += habit.xp; totalCompleted++; }
+        });
+      });
+      
+      // Recalculate lifetime discipline
+      let lifetimeTotalDue = 0;
+      let lifetimeTotalCompleted = 0;
+      Object.keys(newLogs).forEach(logDate => {
+        const log = newLogs[logDate];
+        const logDateObj = new Date(logDate);
+        const dueOnDay = prev.habits.filter(h => h.active && isHabitDueOnDate(h, logDateObj));
+        dueOnDay.forEach(habit => {
+          lifetimeTotalDue++;
+          if (log.completed.includes(habit.id)) lifetimeTotalCompleted++;
+        });
+      });
+      const lifetimeDiscipline = lifetimeTotalDue > 0 ? (lifetimeTotalCompleted / lifetimeTotalDue) * 100 : 0;
       
       return {
         ...prev,
         logs: newLogs,
-        habits: recalculated.recalculatedHabits,
         user: {
           ...prev.user,
-          xp: recalculated.totalXP,
-          totalCompleted: recalculated.totalCompleted,
-          lifetimeDiscipline: recalculated.lifetimeDiscipline,
+          xp: totalXP,
+          totalCompleted: totalCompleted,
+          lifetimeDiscipline: lifetimeDiscipline,
           levelPoints: totalLevelPoints,
-          pendingLevelPoints: 0,
-          level: newLevel,
           pointsForCurrentLevel: pointsForCurrentLevel,
-          pointsNeededForNextLevel: pointsNeededForNextLevel,
-          inventory: recalculated.newInventory
-        },
-        settings: { 
+          level: newLevel,
+        },        settings: { 
           ...prev.settings, 
-          dashboardPunishment: recalculated.dashboardPunishment, 
-          consecutiveMissMap: recalculated.consecutiveMissMap 
+          consecutiveMissMap: newConsecutiveMissMap
         }
       };
     });
