@@ -16,7 +16,7 @@ const Dashboard = ({ state, actions }) => {
 
   const getMood = (pct) => pct === 100 ? 4 : pct >= 80 ? 3 : pct >= 50 ? 2 : pct >= 20 ? 1 : 0;
   const currentMood = getMood(completionPct);
-  const moods = ['😫', '😟', '', '🙂', '🤩'];
+  const moods = ['😫', '😟', '😐', '🙂', '🤩'];
 
   if (state.settings.isPaused) {
     return <div style={{ textAlign: 'center', padding: '40px 20px' }}><h2 className="gold-text">️ Journey Paused</h2><p style={{ color: '#888' }}>{state.settings.pauseReason}</p></div>;
