@@ -60,6 +60,7 @@ const getDefaultState = () => ({
     customPunishments: [],
     punishmentMode: 'both',
     dashboardPunishment: null,
+    consecutiveMissPunishment: null,  // NEW: Separate punishment for consecutive misses
     consecutiveMissMap: {},
     isPaused: false,
     pauseReason: '',
