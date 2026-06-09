@@ -12,7 +12,6 @@ export const useApp = () => {
     applyTheme(state.settings.theme);
     evaluateAchievements();
     checkRestDayExpiry();
-    checkDayRollover();
   }, [state]);
 
   const applyTheme = (themeId) => {
@@ -23,31 +22,13 @@ export const useApp = () => {
     root.style.setProperty('--bg-dark', theme.bg);
   };
 
-  const checkDayRollover = () => {
-    const today = getToday();
-    if (state.user.lastProgressDate !== today) {
-      const newPoints = state.user.levelPoints + (state.user.pendingLevelPoints || 0);
-      setState(prev => ({
-        ...prev,
-        user: {
-          ...prev.user,
-          levelPoints: newPoints,
-          pendingLevelPoints: 0,
-          lastProgressDate: today
-        }
-      }));
-    }
-  };
-
   const checkRestDayExpiry = () => {
     if (state.settings.restDayActive && state.settings.restDayExpiry) {
       const now = new Date();
       const expiry = new Date(state.settings.restDayExpiry);
       if (now > expiry) {
-        setState(prev => ({
-          ...prev,
-          settings: { ...prev.settings, restDayActive: false, restDayExpiry: null }
-        }));      }
+        setState(prev => ({ ...prev, settings: { ...prev.settings, restDayActive: false, restDayExpiry: null } }));
+      }
     }
   };
 
@@ -67,7 +48,6 @@ export const useApp = () => {
     if (state.settings.isPaused || state.settings.restDayActive) return false;
     return isHabitDueOnDate(habit, new Date());
   };
-
   const getDueHabits = () => state.habits.filter(h => h.active && isHabitDueToday(h));
 
   const addHabit = (habit) => {
@@ -80,7 +60,7 @@ export const useApp = () => {
   const deleteHabit = (id) => setState(prev => ({ ...prev, habits: prev.habits.filter(h => h.id !== id) }));
   const toggleHabitArchive = (id) => setState(prev => ({ ...prev, habits: prev.habits.map(h => h.id === id ? { ...h, active: !h.active } : h) }));
 
-  const getPunishmentThreshold = (level) => 50 + ((level - 1) * 5);
+  const getPunishmentThreshold = (level) => Math.min(80, 50 + ((level - 1) * 5)); // 50% to 80%
 
   const checkConsecutiveMisses = (habitId, logs) => {
     const today = getToday();
@@ -96,7 +76,8 @@ export const useApp = () => {
       while (true) {
         checkDate.setDate(checkDate.getDate() - 1);
         const checkStr = checkDate.toISOString().split('T')[0];
-        if (logs[checkStr] && logs[checkStr].missed.includes(habitId)) count++;        else break;
+        if (logs[checkStr] && logs[checkStr].missed.includes(habitId)) count++;
+        else break;
       }
       return count;
     }
@@ -107,27 +88,20 @@ export const useApp = () => {
     let totalDue = 0;
     let totalCompleted = 0;
     const dates = Object.keys(logs).sort();
-    
     dates.forEach(dateStr => {
       const date = new Date(dateStr);
       const log = logs[dateStr];
       const dueOnDay = habits.filter(h => h.active && isHabitDueOnDate(h, date));
-      
       dueOnDay.forEach(habit => {
         totalDue++;
-        if (log.completed.includes(habit.id)) {
-          totalCompleted++;
-        }
+        if (log.completed.includes(habit.id)) totalCompleted++;
       });
-    });
-    
-    return totalDue > 0 ? (totalCompleted / totalDue) * 100 : 0;
+    });    return totalDue > 0 ? (totalCompleted / totalDue) * 100 : 0;
   };
 
   const calculateDailyPoints = (completionPct, level) => {
     const maxPoints = Math.max(0.5, 4.0 - ((level - 1) * 0.5));
-    const negThreshold = 50 + ((level - 1) * 5);
-
+    const negThreshold = getPunishmentThreshold(level);
     if (completionPct >= negThreshold) {
       return maxPoints * (completionPct / 100);
     } else {
@@ -135,16 +109,56 @@ export const useApp = () => {
     }
   };
 
-const recalculateState = (prev) => {
+  // COMPLETE REWRITE OF RECALCULATE STATE
+  const recalculateState = (prev) => {
+    let totalXP = 0;
+    let totalCompletedCount = 0;
+    let totalLevelPoints = 0;
+    let lifetimeTotalDue = 0;
+    let lifetimeTotalCompleted = 0;
     const today = getToday();
     const todayLog = prev.logs[today] || { completed: [], missed: [] };
-    const dueHabits = prev.habits.filter(h => h.active && isHabitDueOnDate(h, new Date()));
-    const totalDue = dueHabits.length;
-    const completionPct = totalDue > 0 ? (todayLog.completed.length / totalDue) * 100 : 100;
-    const threshold = getPunishmentThreshold(prev.user.level);
-    
+    const dueHabitsToday = prev.habits.filter(h => h.active && isHabitDueOnDate(h, new Date()));
+    const todayCompletionPct = dueHabitsToday.length > 0 ? (todayLog.completed.length / dueHabitsToday.length) * 100 : 100;
+
+    // 1. Iterate through ALL logs to calculate lifetime stats and total level points
+    Object.keys(prev.logs).forEach(dateStr => {
+      const log = prev.logs[dateStr];
+      const dateObj = new Date(dateStr);
+      const dueOnDay = prev.habits.filter(h => h.active && isHabitDueOnDate(h, dateObj));
+      
+      dueOnDay.forEach(habit => {
+        lifetimeTotalDue++;
+        if (log.completed.includes(habit.id)) {
+          lifetimeTotalCompleted++;
+          totalXP += habit.xp;
+          totalCompletedCount++;
+        }
+      });
+
+      const dayPct = dueOnDay.length > 0 ? (log.completed.length / dueOnDay.length) * 100 : 100;
+      // Use level 1 for historical points calculation to keep it consistent, or current level. 
+      // Let's use current level for simplicity as requested.
+      totalLevelPoints += calculateDailyPoints(dayPct, prev.user.level);
+    });
+
+    const lifetimeDiscipline = lifetimeTotalDue > 0 ? (lifetimeTotalCompleted / lifetimeTotalDue) * 100 : 0;
+
+    // 2. Calculate Level based on Total Points
+    let newLevel = 1;    for (let i = SAINT_LEVELS.length - 1; i >= 0; i--) {
+      if (totalLevelPoints >= (i * 100)) { 
+        newLevel = i + 1;
+        break;
+      }
+    }
+    newLevel = Math.min(7, newLevel);
+
+    const pointsForCurrentLevel = totalLevelPoints - ((newLevel - 1) * 100);
+
+    // 3. Punishment Logic (Dashboard)
     let dashboardPunishment = prev.settings.dashboardPunishment;
-    if (completionPct < threshold) {
+    const threshold = getPunishmentThreshold(newLevel);
+    if (todayCompletionPct < threshold) {
       if (!dashboardPunishment) {
         const pool = prev.settings.punishmentMode === 'custom' ? prev.settings.customPunishments : prev.settings.punishmentMode === 'both' ? [...BUILT_IN_PUNISHMENTS, ...prev.settings.customPunishments] : BUILT_IN_PUNISHMENTS;
         dashboardPunishment = pool[Math.floor(Math.random() * pool.length)] || '20 Push-ups';
@@ -152,72 +166,41 @@ const recalculateState = (prev) => {
     } else {
       dashboardPunishment = null; 
     }
-    
+
+    // 4. Consecutive Misses Logic (Calendar)
     const consecutiveMissMap = {};
-    dueHabits.forEach(habit => {
+    dueHabitsToday.forEach(habit => {
       const count = checkConsecutiveMisses(habit.id, prev.logs);
       if (count >= 2) consecutiveMissMap[habit.id] = count;
     });
-    
-    let totalXP = 0;
-    let totalCompleted = 0;
-    Object.values(prev.logs).forEach(log => {
-      log.completed.forEach(habitId => {
-        const habit = prev.habits.find(h => h.id === habitId);
-        if (habit) { totalXP += habit.xp; totalCompleted++; }
-      });
-    });
-    
-    const recalculatedHabits = prev.habits.map(habit => ({
-      ...habit,
-      currentStreak: calculateStreakForHabit(habit.id, prev.logs)
-    }));
 
-    const lifetimeDiscipline = calculateLifetimeDiscipline(prev.logs, prev.habits);
-    const pendingLevelPoints = calculateDailyPoints(completionPct, prev.user.level);
-    
-    // Calculate total points from all days
-    let totalLevelPoints = prev.user.levelPoints || 0;
-    if (prev.user.lastProgressDate !== today) {
-      totalLevelPoints += pendingLevelPoints;
-    }
-    
-    let newLevel = 1;
-    for (let i = SAINT_LEVELS.length - 1; i >= 0; i--) {
-      if (totalLevelPoints >= (i * 100)) { 
-        newLevel = i + 1;
-        break;
-      }
-    }
-    newLevel = Math.min(7, newLevel);
-    
-    const pointsForCurrentLevel = totalLevelPoints - ((newLevel - 1) * 100);
-    const pointsNeededForNextLevel = 100;
-
+    // 5. Inventory Check
     let newInventory = [...prev.user.inventory];
     newInventory = newInventory.filter(itemId => {
       const item = SHOP_ITEMS.find(i => i.id === itemId);
       return item && totalXP >= item.cost;
     });
-    
+
+    const recalculatedHabits = prev.habits.map(habit => ({
+      ...habit,
+      currentStreak: calculateStreakForHabit(habit.id, prev.logs)
+    }));
+
     return {
       dashboardPunishment,
       consecutiveMissMap,
       totalXP,
-      totalCompleted,
+      totalCompletedCount,
       recalculatedHabits,
-      completionPct,
+      todayCompletionPct,
       lifetimeDiscipline,
-      pendingLevelPoints,
-      totalLevelPoints,
-      pointsForCurrentLevel,
-      pointsNeededForNextLevel,
+      totalLevelPoints,      pointsForCurrentLevel,
       newLevel,
       newInventory
     };
   };
 
-const completeHabit = (habitId) => {
+  const completeHabit = (habitId) => {
     const today = getToday();
     const habit = state.habits.find(h => h.id === habitId);
     if (!habit) return;
@@ -237,11 +220,10 @@ const completeHabit = (habitId) => {
         user: {
           ...prev.user,
           xp: recalculated.totalXP,
-          totalCompleted: recalculated.totalCompleted,
+          totalCompleted: recalculated.totalCompletedCount,
           lifetimeDiscipline: recalculated.lifetimeDiscipline,
           levelPoints: recalculated.totalLevelPoints,
           pointsForCurrentLevel: recalculated.pointsForCurrentLevel,
-          pointsNeededForNextLevel: recalculated.pointsNeededForNextLevel,
           level: recalculated.newLevel,
           inventory: recalculated.newInventory
         },
@@ -261,18 +243,16 @@ const completeHabit = (habitId) => {
       const newLogs = { ...prev.logs, [today]: newTodayLog };
       const recalculated = recalculateState({ ...prev, logs: newLogs });
 
-      return {
-        ...prev,
+      return {        ...prev,
         habits: recalculated.recalculatedHabits,
         logs: newLogs,
         user: { 
           ...prev.user, 
           xp: recalculated.totalXP, 
-          totalCompleted: recalculated.totalCompleted,
+          totalCompleted: recalculated.totalCompletedCount,
           lifetimeDiscipline: recalculated.lifetimeDiscipline,
           levelPoints: recalculated.totalLevelPoints,
           pointsForCurrentLevel: recalculated.pointsForCurrentLevel,
-          pointsNeededForNextLevel: recalculated.pointsNeededForNextLevel,
           level: recalculated.newLevel,
           inventory: recalculated.newInventory
         },
@@ -302,11 +282,10 @@ const completeHabit = (habitId) => {
         user: {
           ...prev.user,
           xp: Math.max(0, recalculated.totalXP),
-          totalCompleted: recalculated.totalCompleted,
+          totalCompleted: recalculated.totalCompletedCount,
           lifetimeDiscipline: recalculated.lifetimeDiscipline,
           levelPoints: recalculated.totalLevelPoints,
           pointsForCurrentLevel: recalculated.pointsForCurrentLevel,
-          pointsNeededForNextLevel: recalculated.pointsNeededForNextLevel,
           level: recalculated.newLevel,
           inventory: recalculated.newInventory
         },
@@ -314,108 +293,29 @@ const completeHabit = (habitId) => {
       };
     });
   };
-
   const updateLogsForDate = (dateStr, completed, missed) => {
     setState(prev => {
-      const newLogs = {
-        ...prev.logs,
-        [dateStr]: { completed, missed }
-      };
-      
-      // Recalculate consecutive misses for ALL habits across ALL dates
-      const newConsecutiveMissMap = {};
-      prev.habits.filter(h => h.active).forEach(habit => {
-        const dates = Object.keys(newLogs).sort();
-        let maxConsecutive = 0;
-        let currentConsecutive = 0;
-        
-        dates.forEach(date => {
-          const log = newLogs[date];
-          const dateObj = new Date(date);
-          const isDue = isHabitDueOnDate(habit, dateObj);
-          
-          if (isDue) {
-            if (log.missed.includes(habit.id)) {
-              currentConsecutive++;
-              maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
-            } else if (log.completed.includes(habit.id)) {
-              currentConsecutive = 0;
-            }
-          }
-        });
-        
-        if (maxConsecutive >= 2) {
-          newConsecutiveMissMap[habit.id] = maxConsecutive;
-        }
-      });
-      
-      // Calculate points for the edited date
-      const date = new Date(dateStr);
-      const dueHabitsOnDate = prev.habits.filter(h => h.active && isHabitDueOnDate(h, date));
-      const totalDue = dueHabitsOnDate.length;
-      const completionPct = totalDue > 0 ? (completed.length / totalDue) * 100 : 100;
-      
-      // Recalculate total level points from all logs
-      let totalLevelPoints = 0;
-      Object.keys(newLogs).forEach(logDate => {
-        const log = newLogs[logDate];
-        const logDateObj = new Date(logDate);
-        const dueOnDay = prev.habits.filter(h => h.active && isHabitDueOnDate(h, logDateObj));
-        const dueCount = dueOnDay.length;
-        const pct = dueCount > 0 ? (log.completed.length / dueCount) * 100 : 100;
-        const dayPoints = calculateDailyPoints(pct, prev.user.level);
-        totalLevelPoints += dayPoints;      });
-      
-      // Calculate level
-      let newLevel = 1;
-      for (let i = SAINT_LEVELS.length - 1; i >= 0; i--) {
-        if (totalLevelPoints >= (i * 100)) { 
-          newLevel = i + 1;
-          break;
-        }
-      }
-      newLevel = Math.min(7, newLevel);
-      
-      const pointsForCurrentLevel = totalLevelPoints - ((newLevel - 1) * 100);
-      
-      // Recalculate XP
-      let totalXP = 0;
-      let totalCompleted = 0;
-      Object.values(newLogs).forEach(log => {
-        log.completed.forEach(habitId => {
-          const habit = prev.habits.find(h => h.id === habitId);
-          if (habit) { totalXP += habit.xp; totalCompleted++; }
-        });
-      });
-      
-      // Recalculate lifetime discipline
-      let lifetimeTotalDue = 0;
-      let lifetimeTotalCompleted = 0;
-      Object.keys(newLogs).forEach(logDate => {
-        const log = newLogs[logDate];
-        const logDateObj = new Date(logDate);
-        const dueOnDay = prev.habits.filter(h => h.active && isHabitDueOnDate(h, logDateObj));
-        dueOnDay.forEach(habit => {
-          lifetimeTotalDue++;
-          if (log.completed.includes(habit.id)) lifetimeTotalCompleted++;
-        });
-      });
-      const lifetimeDiscipline = lifetimeTotalDue > 0 ? (lifetimeTotalCompleted / lifetimeTotalDue) * 100 : 0;
+      const newLogs = { ...prev.logs, [dateStr]: { completed, missed } };
+      const recalculated = recalculateState({ ...prev, logs: newLogs });
       
       return {
         ...prev,
         logs: newLogs,
+        habits: recalculated.recalculatedHabits,
         user: {
           ...prev.user,
-          xp: totalXP,
-          totalCompleted: totalCompleted,
-          lifetimeDiscipline: lifetimeDiscipline,
-          levelPoints: totalLevelPoints,
-          pointsForCurrentLevel: pointsForCurrentLevel,
-          level: newLevel,
-        },        settings: { 
+          xp: recalculated.totalXP,
+          totalCompleted: recalculated.totalCompletedCount,
+          lifetimeDiscipline: recalculated.lifetimeDiscipline,
+          levelPoints: recalculated.totalLevelPoints,
+          pointsForCurrentLevel: recalculated.pointsForCurrentLevel,
+          level: recalculated.newLevel,
+          inventory: recalculated.newInventory
+        },
+        settings: { 
           ...prev.settings, 
-          consecutiveMissMap: newConsecutiveMissMap
+          dashboardPunishment: recalculated.dashboardPunishment, 
+          consecutiveMissMap: recalculated.consecutiveMissMap 
         }
       };
     });
@@ -436,11 +336,11 @@ const completeHabit = (habitId) => {
       setState(prev => ({ ...prev, user: { ...prev.user, xp: prev.user.xp - item.cost, inventory: [...prev.user.inventory, item.id] } }));
     }
   };
+
   const updateSettings = (updates) => {
     setState(prev => ({ ...prev, settings: { ...prev.settings, ...updates } }));
     if (updates.theme) applyTheme(updates.theme);
   };
-
   const clearPunishment = () => setState(prev => ({ ...prev, settings: { ...prev.settings, dashboardPunishment: null } }));
 
   const actions = {
