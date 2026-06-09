@@ -53,11 +53,13 @@ const Dashboard = ({ state, actions }) => {
         <p style={{textAlign: 'center', fontSize: '12px', color: '#888', marginTop: '8px'}}>Today: {completionPct}% ({todayLog.completed.length}/{dueHabits.length})</p>
         
         {/* LEVEL PROGRESS BAR */}
+        {state.user.level < 7 && (
         <ProgressBar 
-          current={displayLevelPoints} 
-          max={nextLevelThreshold} 
-          label={`Level Progress (${Math.round(displayLevelPoints)} / ${nextLevelThreshold} pts)`} 
-        />
+        current={state.user.pointsForCurrentLevel || 0} 
+        max={state.user.pointsNeededForNextLevel || 100} 
+        label={`Level Progress (${Math.round(state.user.pointsForCurrentLevel || 0)} / ${state.user.pointsNeededForNextLevel || 100} pts)`} 
+   />
+ )}
       </div>
 
       <div className="card">
