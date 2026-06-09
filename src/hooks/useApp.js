@@ -62,36 +62,37 @@ export const useApp = () => {
 
   const getPunishmentThreshold = (level) => Math.min(80, 50 + ((level - 1) * 5)); // 50% to 80%
 
-  const checkConsecutiveMisses = (habitId, logs, checkDate = new Date()) => {
-    // Check Yesterday
-    const yesterday = new Date(checkDate); 
+  const checkConsecutiveMisses = (habitId, logs) => {
+    const today = getToday();
+    const todayLog = logs[today];
+    
+    // Check if habit was missed today
+    const missedToday = todayLog && todayLog.missed.includes(habitId);
+    
+    if (!missedToday) return 0;
+    
+    // Check if habit was also missed yesterday
+    const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
     const yesterdayLog = logs[yesterdayStr];
     const missedYesterday = yesterdayLog && yesterdayLog.missed.includes(habitId);
     
-    // Check Day Before Yesterday
-    const dayBeforeYesterday = new Date(checkDate); 
-    dayBeforeYesterday.setDate(dayBeforeYesterday.getDate() - 2);
-    const dayBeforeStr = dayBeforeYesterday.toISOString().split('T')[0];
-    const dayBeforeLog = logs[dayBeforeStr];
-    const missedDayBefore = dayBeforeLog && dayBeforeLog.missed.includes(habitId);
-    
-    // If BOTH previous days were missed, trigger warning today (3rd day)
-    if (missedYesterday && missedDayBefore) {
+    if (missedYesterday) {
+      // Count consecutive misses including today
       let count = 2;
-      let checkDateIter = new Date(dayBeforeYesterday);
+      let checkDate = new Date(yesterday);
       while (true) {
-        checkDateIter.setDate(checkDateIter.getDate() - 1);
-        const checkStr = checkDateIter.toISOString().split('T')[0];
+        checkDate.setDate(checkDate.getDate() - 1);
+        const checkStr = checkDate.toISOString().split('T')[0];
         if (logs[checkStr] && logs[checkStr].missed.includes(habitId)) count++;
         else break;
       }
       return count;
     }
+    
     return 0;
   };
-
   const calculateLifetimeDiscipline = (logs, habits) => {
     let totalDue = 0;
     let totalCompleted = 0;
