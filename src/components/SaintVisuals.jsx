@@ -15,15 +15,15 @@ const SaintVisuals = ({ level, inventory }) => {
       <div className="scene-bg-fallback" />
       <img src={levelInfo.environment} alt="" className="scene-env" onError={e => e.target.style.display = 'none'} />
       
-      {/* Equipment that goes BEHIND avatar */}
+      {/* BEHIND AVATAR */}
       {equipped.wings && <img src={equipped.wings.image} className="equip equip-wings" alt="" onError={e => e.target.style.display = 'none'} />}
       {equipped.throne && <img src={equipped.throne.image} className="equip equip-throne" alt="" onError={e => e.target.style.display = 'none'} />}
       {equipped.mat && <img src={equipped.mat.image} className="equip equip-mat" alt="" onError={e => e.target.style.display = 'none'} />}
       
-      {/* Main Avatar */}
+      {/* MAIN AVATAR */}
       <img src={levelInfo.avatar} alt="" className="scene-avatar" onError={e => e.target.style.display = 'none'} />
       
-      {/* Equipment that goes IN FRONT of avatar */}
+      {/* IN FRONT OF AVATAR */}
       {equipped.robe && <img src={equipped.robe.image} className="equip equip-robe" alt="" onError={e => e.target.style.display = 'none'} />}
       {equipped.beads && <img src={equipped.beads.image} className="equip equip-beads" alt="" onError={e => e.target.style.display = 'none'} />}
       {equipped.staff && <img src={equipped.staff.image} className="equip equip-staff" alt="" onError={e => e.target.style.display = 'none'} />}
