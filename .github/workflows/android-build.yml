@@ -39,14 +39,12 @@ jobs:
       - name: Build APK with Gradle
         working-directory: ./android
         run: |
-          # Apply limit to THIS shell process — all child processes inherit it
-          sudo prlimit --pid $$ --nofile=65536:65536
-          sudo sysctl -w fs.file-max=524288
-
-          # Verify it worked
-          ulimit -n
-
+          # Fix CRLF line endings in gradlew (Windows -> Linux)
+          sed -i 's/\r//' gradlew
           chmod +x gradlew
+
+          # Verify line endings are fixed
+          file gradlew
 
           cat > gradle.properties << EOF
           org.gradle.jvmargs=-Xmx1024m -XX:MaxMetaspaceSize=512m
