@@ -26,7 +26,7 @@ const CalendarPage = ({ state, actions }) => {
     const dueHabits = state.habits.filter(h => h.active && isHabitDueOnDate(h, date));
     const dueCount = dueHabits.length;
     
-    if (dueCount === 0) return { dateStr, due: 0, completed: 0, missed: 0, pct: 100, status: 'neutral', consecutiveMisses: 0 };
+    if (dueCount === 0) return { dateStr, due: 0, completed: 0, missed: 0, pct: 100, status: 'neutral', hasConsecutiveMiss: false };
     
     const completedCount = log ? log.completed.filter(id => dueHabits.some(h => h.id === id)).length : 0;
     const missedCount = log ? log.missed.filter(id => dueHabits.some(h => h.id === id)).length : 0;
@@ -36,20 +36,19 @@ const CalendarPage = ({ state, actions }) => {
     if (pct >= 80) status = 'green';
     else if (pct >= 50) status = 'yellow';
     
-    let consecutiveMisses = 0;
+    // Direct consecutive miss check
+    let hasConsecutiveMiss = false;
+    const yesterday = new Date(date);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayLog = state.logs[yesterdayStr];
+
     dueHabits.forEach(habit => {
-      const yesterday = new Date(date);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
-      
       const missedToday = log && log.missed.includes(habit.id);
-      const missedYesterday = state.logs[yesterdayStr] && state.logs[yesterdayStr].missed.includes(habit.id);
-      
-      if (missedToday && missedYesterday) {
-        consecutiveMisses++;
-      }    });
-    
-    return { dateStr, due: dueCount, completed: completedCount, missed: missedCount, pct, status, consecutiveMisses, dueHabits, log };
+      const missedYesterday = yesterdayLog && yesterdayLog.missed.includes(habit.id);
+      if (missedToday && missedYesterday) hasConsecutiveMiss = true;
+    });    
+    return { dateStr, due: dueCount, completed: completedCount, missed: missedCount, pct, status, hasConsecutiveMiss, dueHabits, log };
   };
 
   const handleDateClick = (day) => {
@@ -59,9 +58,7 @@ const CalendarPage = ({ state, actions }) => {
     setEditMode(false);
   };
 
-  const handleEditClick = () => {
-    setEditMode(true);
-  };
+  const handleEditClick = () => setEditMode(true);
 
   const handleToggleHabit = (habitId, dateStr) => {
     const log = state.logs[dateStr] || { completed: [], missed: [] };
@@ -70,19 +67,15 @@ const CalendarPage = ({ state, actions }) => {
     
     let newCompleted, newMissed;
     
-    // Cycle through: unmarked → completed → missed → unmarked
     if (isCompleted) {
-      // Was completed, now mark as missed
       newCompleted = log.completed.filter(id => id !== habitId);
       newMissed = [...log.missed, habitId];
     } else if (isMissed) {
-      // Was missed, now unmark
       newCompleted = log.completed.filter(id => id !== habitId);
       newMissed = log.missed.filter(id => id !== habitId);
     } else {
-      // Was unmarked, now mark as completed
       newCompleted = [...log.completed, habitId];
-      newMissed = log.missed.filter(id => id !== habitId);
+      newMissed = log.missed;
     }
     
     actions.updateLogsForDate(dateStr, newCompleted, newMissed);
@@ -100,10 +93,10 @@ const CalendarPage = ({ state, actions }) => {
 
   return (
     <div>
-      <h2 className="gold-text">Calendar</h2>      <div className="card">
+      <h2 className="gold-text">Calendar</h2>
+      <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <button className="btn btn-outline" style={{ width: 'auto' }} onClick={prevMonth}>←</button>
-          <h3>{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
+          <button className="btn btn-outline" style={{ width: 'auto' }} onClick={prevMonth}>←</button>          <h3>{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
           <button className="btn btn-outline" style={{ width: 'auto' }} onClick={nextMonth}>→</button>
         </div>
         <div className="calendar-grid">
@@ -121,8 +114,8 @@ const CalendarPage = ({ state, actions }) => {
                 onClick={() => handleDateClick(day)}
                 style={{ position: 'relative', cursor: 'pointer' }}
               >
-                {stats && stats.consecutiveMisses > 0 && (
-                  <div style={{ position: 'absolute', top: '2px', right: '2px', fontSize: '10px', color: '#f44336' }}>⚠️</div>
+                {stats && stats.hasConsecutiveMiss && (
+                  <div style={{ position: 'absolute', top: '2px', right: '2px', fontSize: '12px' }}>⚠️</div>
                 )}
                 <div style={{ fontSize: '12px', fontWeight: 'bold' }}>{day}</div>
                 {stats && stats.due > 0 && (
@@ -140,18 +133,19 @@ const CalendarPage = ({ state, actions }) => {
         <div className="card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <h3 className="gold-text">{selectedDate.dateStr}</h3>
-            {!editMode && selectedDate.due > 0 && (
+            {/* FIXED: Only show Edit button for TODAY */}
+            {!editMode && selectedDate.due > 0 && selectedDate.dateStr === todayStr && (
               <button className="btn btn-outline" style={{ width: 'auto', fontSize: '12px' }} onClick={handleEditClick}>
                 ✏️ Edit
               </button>
             )}
           </div>
           
-          {selectedDate.consecutiveMisses > 0 && (
+          {selectedDate.hasConsecutiveMiss && (
             <div style={{ background: 'rgba(244,67,54,0.2)', padding: '12px', borderRadius: '8px', marginBottom: '12px', border: '1px solid #f44336' }}>
-              <p style={{ color: '#f44336', fontSize: '13px', margin: 0 }}>⚠️ {selectedDate.consecutiveMisses} habit(s) missed consecutively</p>            </div>
-          )}
-          
+              <p style={{ color: '#f44336', fontSize: '13px', margin: 0 }}>⚠️ Consecutive misses detected!</p>
+            </div>
+          )}          
           {selectedDate.due === 0 ? (
             <p style={{ textAlign: 'center', color: '#888', padding: '20px' }}>No habits were due on this day</p>
           ) : !editMode ? (
@@ -174,14 +168,13 @@ const CalendarPage = ({ state, actions }) => {
                   <p className="gold-text" style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>{selectedDate.pct}%</p>
                 </div>
               </div>
-              
               <div className="progress-bar" style={{ height: '8px' }}>
                 <div className="progress-fill" style={{ width: `${selectedDate.pct}%`, background: selectedDate.status === 'green' ? '#4caf50' : selectedDate.status === 'yellow' ? '#ff9800' : '#f44336' }}></div>
               </div>
             </>
           ) : (
             <div>
-              <p style={{ fontSize: '13px', color: '#888', marginBottom: '12px' }}>Tap habits to toggle completion status</p>
+              <p style={{ fontSize: '13px', color: '#888', marginBottom: '12px' }}>Tap habits to toggle status</p>
               {selectedDate.dueHabits.map(habit => {
                 const isCompleted = selectedDate.log?.completed.includes(habit.id);
                 const isMissed = selectedDate.log?.missed.includes(habit.id);
@@ -198,10 +191,10 @@ const CalendarPage = ({ state, actions }) => {
                       <div style={{ fontSize: '11px', color: '#888' }}>{habit.difficulty} • {habit.xp} XP</div>
                     </div>
                     <div style={{ fontSize: '20px' }}>
-                      {isCompleted ? '✅' : isMissed ? '❌' : '⚪'}                    </div>
+                      {isCompleted ? '✅' : isMissed ? '❌' : '⚪'}
+                    </div>
                   </div>
-                );
-              })}
+                );              })}
               <button className="btn" style={{ marginTop: '16px' }} onClick={() => setEditMode(false)}>Done Editing</button>
             </div>
           )}
