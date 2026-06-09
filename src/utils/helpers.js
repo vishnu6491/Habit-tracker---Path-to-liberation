@@ -2,9 +2,10 @@ import { SAINT_LEVELS } from '../data/constants';
 
 export const getToday = () => new Date().toISOString().split('T')[0];
 
-export const getSaintLevel = (progress) => {
+export const getSaintLevel = (level) => {
+  const levelNum = typeof level === 'number' ? level : 1;
   for (let i = SAINT_LEVELS.length - 1; i >= 0; i--) {
-    if (progress >= SAINT_LEVELS[i].minProgress) return SAINT_LEVELS[i];
+    if (levelNum >= SAINT_LEVELS[i].level) return SAINT_LEVELS[i];
   }
   return SAINT_LEVELS[0];
 };
