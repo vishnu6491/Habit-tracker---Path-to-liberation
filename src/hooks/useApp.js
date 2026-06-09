@@ -335,11 +335,43 @@ export const useApp = () => {
     if (updates.theme) applyTheme(updates.theme);
   };
 
+  const updateLogsForDate = (dateStr, completed, missed) => {
+    setState(prev => {
+      const newLogs = {
+        ...prev.logs,
+        [dateStr]: { completed, missed }
+      };
+      
+      const recalculated = recalculateState({ ...prev, logs: newLogs });
+      
+      return {
+        ...prev,
+        logs: newLogs,
+        habits: recalculated.recalculatedHabits,
+        user: {
+          ...prev.user,
+          xp: recalculated.totalXP,
+          totalCompleted: recalculated.totalCompleted,
+          lifetimeDiscipline: recalculated.lifetimeDiscipline,
+          pendingLevelPoints: recalculated.pendingLevelPoints,
+          level: recalculated.newLevel,
+          inventory: recalculated.newInventory
+        },
+        settings: { 
+          ...prev.settings, 
+          dashboardPunishment: recalculated.dashboardPunishment, 
+          consecutiveMissMap: recalculated.consecutiveMissMap 
+        }
+      };
+    });
+  };
+
   const clearPunishment = () => setState(prev => ({ ...prev, settings: { ...prev.settings, dashboardPunishment: null } }));
 
   const actions = {
     addHabit, updateHabit, deleteHabit, toggleHabitArchive,
     completeHabit, missHabit, undoHabit,
+    updateLogsForDate,
     activateRestDay, togglePause,
     addCustomPunishment, removeCustomPunishment,    buyItem, updateSettings, clearPunishment,
     exportData: () => exportData(state),
