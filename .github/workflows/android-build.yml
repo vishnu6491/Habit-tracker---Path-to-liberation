@@ -11,7 +11,13 @@ jobs:
     env:
       GRADLE_USER_HOME: /home/runner/.gradle
       JAVA_OPTS: "-Xmx1g -XX:+UseG1GC"
+
     steps:
+      - name: Increase file descriptor limit
+        run: |
+          sudo sysctl -w fs.file-max=65536
+          ulimit -n 65536
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -41,21 +47,20 @@ jobs:
       - name: Build APK with Gradle
         working-directory: ./android
         run: |
-          # Make gradlew executable
+          ulimit -n 65536
           chmod +x gradlew
-          
-          # Write gradle.properties
+
           cat > gradle.properties << EOF
           org.gradle.jvmargs=-Xmx1024m -XX:MaxMetaspaceSize=512m
           org.gradle.daemon=false
           org.gradle.parallel=false
           org.gradle.workers.max=1
-          org.gradle.caching=true
-          android.enableBuildCache=true
+          org.gradle.caching=false
+          android.enableBuildCache=false
+          android.useAndroidX=true
           EOF
-          
-          # Build APK
-          ./gradlew assembleDebug --console=plain -S
+
+          ./gradlew assembleDebug --no-daemon --console=plain -S
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
