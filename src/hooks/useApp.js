@@ -63,16 +63,28 @@ export const useApp = () => {
   const getPunishmentThreshold = (level) => Math.min(80, 50 + ((level - 1) * 5)); // 50% to 80%
 
   const checkConsecutiveMisses = (habitId, logs) => {
+  const checkConsecutiveMisses = (habitId, logs) => {
     const today = getToday();
-    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+    
+    // Check Yesterday
+    const yesterday = new Date(); 
+    yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
-    const todayLog = logs[today];
     const yesterdayLog = logs[yesterdayStr];
-    const missedToday = todayLog && todayLog.missed.includes(habitId);
     const missedYesterday = yesterdayLog && yesterdayLog.missed.includes(habitId);
-    if (missedToday && missedYesterday) {
+    
+    // Check Day Before Yesterday
+    const dayBeforeYesterday = new Date(); 
+    dayBeforeYesterday.setDate(dayBeforeYesterday.getDate() - 2);
+    const dayBeforeStr = dayBeforeYesterday.toISOString().split('T')[0];
+    const dayBeforeLog = logs[dayBeforeStr];
+    const missedDayBefore = dayBeforeLog && dayBeforeLog.missed.includes(habitId);
+    
+    // If BOTH previous days were missed, trigger punishment today
+    if (missedYesterday && missedDayBefore) {
       let count = 2;
-      let checkDate = new Date(yesterday);
+      let checkDate = new Date(dayBeforeYesterday);
+      // Count how far back the streak actually goes
       while (true) {
         checkDate.setDate(checkDate.getDate() - 1);
         const checkStr = checkDate.toISOString().split('T')[0];
