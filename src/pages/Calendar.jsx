@@ -51,17 +51,22 @@ const CalendarPage = ({ state, actions }) => {
     else if (pct >= 50) status = 'yellow';
     
     // Check for consecutive misses
+    // Check for consecutive misses (Trigger on the 3rd day)
     let consecutiveMisses = 0;
     dueHabits.forEach(habit => {
       const yesterday = new Date(date);
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayStr = yesterday.toISOString().split('T')[0];
-      const yesterdayLog = state.logs[yesterdayStr];
       
-      const missedToday = log.missed.includes(habit.id);
-      const missedYesterday = yesterdayLog && yesterdayLog.missed.includes(habit.id);
+      const dayBefore = new Date(date);
+      dayBefore.setDate(dayBefore.getDate() - 2);
+      const dayBeforeStr = dayBefore.toISOString().split('T')[0];
+
+      const missedYesterday = state.logs[yesterdayStr] && state.logs[yesterdayStr].missed.includes(habit.id);
+      const missedDayBefore = state.logs[dayBeforeStr] && state.logs[dayBeforeStr].missed.includes(habit.id);
       
-      if (missedToday && missedYesterday) {
+      // If yesterday and day-before were both missed, show warning on THIS day
+      if (missedYesterday && missedDayBefore) {
         consecutiveMisses++;
       }
     });
