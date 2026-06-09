@@ -31,17 +31,13 @@ const CalendarPage = ({ state, actions }) => {
     }
   }, [selectedDate, state.logs]);
 
-  // Check if habit has consecutive misses ending on this date
   const checkConsecutiveMissesForDate = (habitId, logs, targetDate) => {
     const targetStr = targetDate.toISOString().split('T')[0];
     const targetLog = logs[targetStr];
-    
-    // Check if habit was missed on this target date
     const missedOnTarget = targetLog && targetLog.missed.includes(habitId);
     
     if (!missedOnTarget) return 0;
     
-    // Check if habit was also missed yesterday
     const yesterday = new Date(targetDate);
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
@@ -49,18 +45,15 @@ const CalendarPage = ({ state, actions }) => {
     const missedYesterday = yesterdayLog && yesterdayLog.missed.includes(habitId);
     
     if (missedYesterday) {
-      // Count consecutive misses including target date
       let count = 2;
       let checkDate = new Date(yesterday);
-      while (true) {
-        checkDate.setDate(checkDate.getDate() - 1);
+      while (true) {        checkDate.setDate(checkDate.getDate() - 1);
         const checkStr = checkDate.toISOString().split('T')[0];
         if (logs[checkStr] && logs[checkStr].missed.includes(habitId)) count++;
         else break;
       }
       return count;
     }
-    
     return 0;
   };
 
@@ -82,7 +75,6 @@ const CalendarPage = ({ state, actions }) => {
     if (pct >= 80) status = 'green';
     else if (pct >= 50) status = 'yellow';
     
-    // Check for consecutive misses (show warning on 3rd day)
     let consecutiveMisses = 0;
     dueHabits.forEach(habit => {
       const count = checkConsecutiveMissesForDate(habit.id, state.logs, date);
@@ -103,8 +95,8 @@ const CalendarPage = ({ state, actions }) => {
     setEditMode(false);
     setLocalLog(log);
   };
-  const handleEditClick = () => {
-    if (!selectedDate) return;
+
+  const handleEditClick = () => {    if (!selectedDate) return;
     if (selectedDate.dateStr < threeDaysAgoStr) {
       alert('You can only edit habits for the last 3 days!');
       return;
@@ -152,8 +144,8 @@ const CalendarPage = ({ state, actions }) => {
   };
 
   return (
-    <div>      <h2 className="gold-text">Calendar</h2>
-      <div className="card">
+    <div>
+      <h2 className="gold-text">Calendar</h2>      <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <button className="btn btn-outline" style={{ width: 'auto' }} onClick={prevMonth}>←</button>
           <h3>{currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}</h3>
@@ -201,9 +193,8 @@ const CalendarPage = ({ state, actions }) => {
             {!editMode && selectedDate.due > 0 && selectedDate.dateStr >= threeDaysAgoStr && selectedDate.dateStr <= todayStr && (
               <button className="btn btn-outline" style={{ width: 'auto', fontSize: '12px' }} onClick={handleEditClick}>
                 ✏️ Edit
-              </button>            )}
-          </div>
-          
+              </button>
+            )}          </div>
           
           {selectedDate.due === 0 ? (
             <p style={{ textAlign: 'center', color: '#888', padding: '20px' }}>No habits were due on this day</p>
@@ -230,6 +221,21 @@ const CalendarPage = ({ state, actions }) => {
               <div className="progress-bar" style={{ height: '8px' }}>
                 <div className="progress-fill" style={{ width: `${selectedDate.pct}%`, background: selectedDate.status === 'green' ? '#4caf50' : selectedDate.status === 'yellow' ? '#ff9800' : '#f44336' }}></div>
               </div>
+              
+              {/* PUNISHMENT - At bottom */}
+              {selectedDate.consecutiveMisses > 0 && state.settings.dashboardPunishment && (
+                <div style={{ background: 'rgba(244,67,54,0.2)', padding: '12px', borderRadius: '8px', border: '2px solid #f44336', marginTop: '16px' }}>
+                  <p style={{ color: '#f44336', fontSize: '14px', margin: '0 0 8px 0', fontWeight: 'bold' }}>
+                    ⚠️ Consecutive Miss Punishment
+                  </p>
+                  <p style={{ color: '#f44336', fontSize: '13px', margin: '0 0 8px 0' }}>
+                    You missed {selectedDate.consecutiveMisses} consecutive day(s)
+                  </p>
+                  <h4 className="gold-text" style={{ margin: '8px 0', fontSize: '16px' }}>
+                    {state.settings.dashboardPunishment}
+                  </h4>
+                </div>
+              )}
             </>
           ) : (
             <div>
@@ -237,9 +243,9 @@ const CalendarPage = ({ state, actions }) => {
               {selectedDate.dueHabits && selectedDate.dueHabits.map((habit) => {
                 const isCompleted = localLog?.completed.includes(habit.id);
                 const isMissed = localLog?.missed.includes(habit.id);
-                
-                return (
-                  <div                     key={habit.id}
+                                return (
+                  <div 
+                    key={habit.id}
                     className={`habit-item ${isCompleted ? 'completed' : isMissed ? 'missed' : ''}`}
                     onClick={() => handleToggleHabit(habit.id)}
                     style={{ cursor: 'pointer' }}
@@ -258,21 +264,6 @@ const CalendarPage = ({ state, actions }) => {
             </div>
           )}
         </div>
-
-/* PUNISHMENT - Moved to bottom */
-{selectedDate.consecutiveMisses > 0 && state.settings.dashboardPunishment && (
-  <div style={{ background: 'rgba(244,67,54,0.2)', padding: '12px', borderRadius: '8px', border: '2px solid #f44336', marginTop: '16px' }}>
-    <p style={{ color: '#f44336', fontSize: '14px', margin: '0 0 8px 0', fontWeight: 'bold' }}>
-      ⚠️ Consecutive Miss Punishment
-    </p>
-    <p style={{ color: '#f44336', fontSize: '13px', margin: '0 0 8px 0' }}>
-      You missed {selectedDate.consecutiveMisses} consecutive day(s)
-    </p>
-    <h4 className="gold-text" style={{ margin: '8px 0', fontSize: '16px' }}>
-      {state.settings.dashboardPunishment}
-    </h4>
-  </div>
-)}
       )}
     </div>
   );
