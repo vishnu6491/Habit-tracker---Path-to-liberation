@@ -36,11 +36,15 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Download Gradle Wrapper JAR
+        run: |
+          mkdir -p android/gradle/wrapper
+          curl -L -o android/gradle/wrapper/gradle-wrapper.jar \
+            https://github.com/gradle/gradle/raw/v8.2.0/gradle/wrapper/gradle-wrapper.jar
+
       - name: Build APK with Gradle
         working-directory: ./android
         run: |
-          # Fix gradlew MAX_FD bug — stops ulimit returning bad value
-          sed -i 's/MAX_FD=maximum/MAX_FD=65536/' gradlew
           sed -i 's/\r//' gradlew
           chmod +x gradlew
 
@@ -54,7 +58,6 @@ jobs:
           android.useAndroidX=true
           EOF
 
-          # Run with bash explicitly instead of sh
           bash gradlew assembleDebug --no-daemon --console=plain -S
 
       - name: Upload APK
