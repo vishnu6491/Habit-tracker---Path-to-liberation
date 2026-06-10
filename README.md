@@ -5,11 +5,10 @@ A production-ready Android habit tracker and personal discipline RPG built with 
 ## Features
 - Daily Habit Tracking with Difficulty Levels
 - Spiritual RPG Evolution (7 Saint Levels, 7 Environments)
-- Karma & XP System with Bonuses
+- XP System with Bonuses
 - Discipline Punishment System
 - Shop, Achievements, and Quests
 - Calendar, Reports (SVG Charts), Mood Tracker, Journal
-- Temple of Records (Permanent History)
 - PWA & Offline Support
 - Capacitor Local Notifications
 
